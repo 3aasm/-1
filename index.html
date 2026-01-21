@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>𝚉𝚘𝚖𝚋𝚒𝚎 𝙵𝚒𝚐𝚑𝚝 - Ultimate Update</title>
+    <!-- استيراد خطوط تشبه خط فورت نايت -->
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Lalezar&display=swap" rel="stylesheet">
+    <link rel="icon" href="صورة_موقع_لعبتي.png" type="صورة_موقع_لعبتي.png">  
+    <style>
+        :root {
+            --fn-blue: #0088ff;  /* Shield */
+            --fn-green: #2ecc71; /* Health */
+            --fn-yellow: #f1c40f; /* Legendary/Damage */
+            --fn-purple: #9b59b6; /* Storm/Enemy */
+            --fn-dark: #1e1e1e;
+            --fn-ui-bg: rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        body {
+            background: #2c3e50;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            font-family: 'Lalezar', 'Luckiest Guy', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+        
+        body.game-active {
+            cursor: none; 
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        /* --- UI Elements --- */
+        .level-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px; 
+            font-size: 20px; 
+            color: var(--fn-yellow);
+            text-shadow: 2px 2px 0 #000;
+            background: rgba(0,0,0,0.6);
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .time-indicator {
+            position: absolute;
+            top: 15px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.3);
+            padding: 2px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .hud-top-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .resource-item {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .hud-map-marker {
+            width: 25px; height: 25px;
+            background: var(--fn-yellow);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: grid; place-items: center;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #000;
+        }
+
+        .status-area {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 350px;
+            transform: skewX(-10deg);
+        }
+
+        .bar-container {
+            position: relative;
+            height: 25px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .stamina-container {
+            position: relative;
+            height: 10px;
+            width: 80%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 2px;
+            margin-bottom: 2px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.1s linear; 
+            position: relative;
+        }
+        
+        .bar-pattern {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent);
+            background-size: 20px 20px;
+            opacity: 0.5;
+        }
+
+        .shield-bar { background: var(--fn-blue); }
+        .health-bar { background: var(--fn-green); }
+        .stamina-bar { background: #f39c12; }
+        .stamina-bar.fatigued { background: #e74c3c; }
+
+        .status-text {
+            position: absolute;
+            right: -40px; top: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #000;
+            transform: skewX(10deg);
+        }
+
+        .weapon-slot {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 100px;
+            height: 100px;
+            background: rgba(0,0,0,0.4);
+            border: 4px solid #fff;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: skewX(-5deg);
+        }
+        
+        .rarity-bg {
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2), transparent);
+            z-index: -1;
+        }
+        .rarity-common { border-color: #95a5a6; }
+        .rarity-rare { border-color: var(--fn-blue); box-shadow: 0 0 15px var(--fn-blue); }
+        .rarity-epic { border-color: #9b59b6; box-shadow: 0 0 15px #9b59b6; }
+        .rarity-legendary { border-color: var(--fn-yellow); box-shadow: 0 0 20px var(--fn-yellow); }
+
+        .ammo-count {
+            font-size: 40px;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            line-height: 1;
+        }
+        .ammo-label {
+            font-size: 16px;
+            color: #ddd;
+        }
+
+        #mobile-controls {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        #mobile-controls.hidden { display: none; }
+
+        .joystick-area {
+            position: absolute;
+            bottom: 50px; left: 50px;
+            width: 150px; height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .joystick-knob {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .mobile-btn {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            touch-action: none;
+            font-family: 'Luckiest Guy';
+            font-size: 20px;
+            user-select: none;
+        }
+        .mobile-btn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.95); }
+
+        #btn-m-fire {
+            bottom: 80px; right: 40px;
+            width: 90px; height: 90px;
+            background: rgba(231, 76, 60, 0.6);
+            border-color: #e74c3c;
+            font-size: 24px;
+        }
+        #btn-m-reload {
+            bottom: 190px; right: 50px;
+            width: 60px; height: 60px;
+        }
+        #btn-m-sprint {
+            bottom: 40px; right: 150px;
+            width: 60px; height: 60px;
+        }
+        #btn-m-interact {
+            bottom: 140px; right: 140px;
+            width: 60px; height: 60px;
+            background: rgba(241, 196, 15, 0.6);
+            border-color: #f1c40f;
+        }
+
+        /* --- Screens --- */
+        .menu-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 30, 48, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .hidden { 
+            display: none !important; 
+            opacity: 0;
+        }
+
+        /* --- تحديث الخطوط الكبيرة --- */
+        .epic-title {
+            font-family: 'Luckiest Guy', cursive;
+            font-size: 100px;
+            color: #fff;
+            text-transform: uppercase;
+            /* تأثير الـ Stroke والتدرج */
+            -webkit-text-stroke: 4px #000; 
+            text-shadow: 
+                0 0 0 #000,
+                5px 5px 0 #000, 
+                0 0 30px var(--fn-blue),
+                0 0 60px var(--fn-blue);
+            transform: rotate(-3deg) skewX(-5deg);
+            margin-bottom: 30px;
+            text-align: center;
+            letter-spacing: 2px;
+            background: -webkit-linear-gradient(#fff, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; 
+            /* لإظهار الـ Stroke بشكل صحيح في بعض المتصفحات نحتاج لتعديل بسيط */
+            position: relative;
+        }
+        /* خدعة لإظهار الـ Stroke مع الـ Gradient */
+        .epic-title::before {
+            content: attr(data-text);
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%;
+            -webkit-text-stroke: 4px #000;
+            -webkit-text-fill-color: transparent;
+            z-index: -1;
+            text-shadow: 7px 7px 0px rgba(0,0,0,0.5);
+        }
+
+        .pause-title {
+            font-family: 'Luckiest Guy', cursive;
+            font-size: 80px;
+            color: #f1c40f;
+            -webkit-text-stroke: 3px #000;
+            text-shadow: 4px 4px 0 #c0392b;
+            transform: rotate(2deg);
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .epic-title { font-size: 60px; -webkit-text-stroke: 2px #000; }
+            .pause-title { font-size: 50px; }
+            .status-area { width: 250px; left: 10px; bottom: 10px; transform: none; }
+            .weapon-slot { right: 10px; bottom: 10px; width: 80px; height: 80px; transform: none; }
+            .ammo-count { font-size: 30px; }
+            .settings-panel-wide { flex-direction: column; height: 90vh; }
+            .joystick-area { bottom: 30px; left: 30px; width: 120px; height: 120px; }
+            #btn-m-fire { bottom: 60px; right: 20px; width: 80px; height: 80px; }
+            #btn-m-sprint { bottom: 30px; right: 120px; }
+            #btn-m-interact { bottom: 120px; right: 110px; }
+        }
+
+        /* --- تحسين الأزرار والأنيميشن --- */
+        .btn {
+            background: var(--fn-yellow);
+            border: none;
+            color: #000;
+            font-family: 'Lalezar', cursive;
+            font-size: 28px;
+            padding: 12px 60px;
+            margin: 15px;
+            cursor: pointer;
+            transform: skewX(-10deg);
+            box-shadow: 0 6px 0 #d35400, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s ease;
+            min-width: 240px;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: skewX(-10deg) translateY(-2px);
+            background: #f39c12;
+            box-shadow: 0 8px 0 #d35400, 0 20px 25px rgba(0,0,0,0.4);
+        }
+
+        /* أنيميشن الضغط القوي */
+        .btn:active, .btn.clicked {
+            transform: skewX(-10deg) translateY(6px) scale(0.95);
+            box-shadow: 0 0 0 #d35400, inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* وميض عند الضغط */
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 300%; height: 300%;
+            background: rgba(255, 255, 255, 0.4);
+            opacity: 0;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none;
+        }
+
+        .btn:active::after {
+            animation: ripple 0.3s ease-out;
+        }
+        
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+            box-shadow: 0 6px 0 #95a5a6, 0 15px 20px rgba(0,0,0,0.2);
+        }
+        .btn-secondary:hover { background: #fff; box-shadow: 0 8px 0 #95a5a6, 0 20px 25px rgba(0,0,0,0.3); }
+        .btn-secondary:active { box-shadow: 0 0 0 #95a5a6; }
+
+        .settings-panel-wide {
+            width: 85%;
+            max-width: 950px;
+            background: rgba(0,0,0,0.85);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid var(--fn-blue);
+            display: flex;
+            flex-direction: row; 
+            gap: 30px;
+            align-items: flex-start;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .settings-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .setting-label { font-size: 18px; color: #fff; }
+
+        input[type="range"] {
+            width: 120px;
+            accent-color: var(--fn-yellow);
+        }
+
+        .key-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .key-bind-btn {
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: none;
+            border-radius: 5px;
+            min-width: 80px;
+            height: 30px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #bdc3c7;
+            text-transform: uppercase;
+        }
+        .key-bind-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #bdc3c7; }
+        .key-bind-btn.waiting {
+            background: var(--fn-yellow);
+            color: #000;
+            box-shadow: 0 3px 0 #d4ac0d;
+            animation: pulse 1s infinite;
+        }
+
+        .cursor-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .cursor-option {
+            height: 50px;
+            background: #2c3e50;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .cursor-option.selected {
+            border-color: var(--fn-yellow);
+            box-shadow: 0 0 10px var(--fn-yellow);
+        }
+        .cursor-icon {
+            width: 24px; height: 24px;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .skin-layout {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            background: rgba(0,0,0,0.6);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .skin-preview-container {
+            width: 250px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1), transparent);
+            border: 4px solid var(--fn-yellow);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.2);
+        }
+
+        #skin-preview-canvas { width: 100%; height: 100%; }
+
+        .skin-controls {
+            display: flex; flex-direction: column; gap: 20px;
+            max-width: 400px;
+        }
+
+        .skin-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .tab-btn {
+            background: rgba(0,0,0,0.3); border: 2px solid transparent;
+            color: #ccc; padding: 10px 15px;
+            cursor: pointer; border-radius: 5px;
+            font-family: 'Lalezar'; font-size: 18px;
+            flex: 1; text-align: center;
+            min-width: 60px;
+        }
+        .tab-btn.active {
+            background: var(--fn-blue); color: #fff;
+            border-color: #fff; transform: scale(1.05);
+        }
+
+        #skin-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; background: rgba(0,0,0,0.3);
+            padding: 15px; border-radius: 10px;
+            max-height: 250px; overflow-y: auto; width: 100%;
+        }
+
+        .skin-option {
+            width: 80px; height: 80px;
+            border: 3px solid transparent; border-radius: 8px;
+            cursor: pointer; background: #2c3e50;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.2s;
+        }
+        .skin-option:hover { transform: scale(1.05); border-color: rgba(255,255,255,0.3); }
+        .skin-option.selected { border-color: var(--fn-yellow); box-shadow: 0 0 10px var(--fn-yellow); transform: scale(1.1); }
+        .preview-box { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        .preview-circle { width: 40px; height: 40px; border-radius: 50%; }
+
+        #upgrade-menu {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2c3e50;
+            border: 4px solid var(--fn-blue);
+            border-radius: 15px;
+            padding: 20px;
+            width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; gap: 15px;
+            pointer-events: auto; z-index: 150;
+        }
+
+        .shop-header {
+            text-align: center; font-size: 30px; color: #fff;
+            margin-bottom: 10px; border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .shop-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;
+        }
+
+        .shop-btn {
+            background: var(--fn-green); border: none; color: white;
+            padding: 5px 20px; border-radius: 4px;
+            font-family: 'Lalezar'; font-size: 18px;
+            cursor: pointer; box-shadow: 0 4px 0 #27ae60;
+        }
+        .shop-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #27ae60; }
+        .shop-btn:disabled { background: #7f8c8d; box-shadow: none; cursor: not-allowed; }
+
+        #custom-cursor {
+            position: absolute;
+            width: 32px; height: 32px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            filter: drop-shadow(1px 1px 2px black);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .victory-banner {
+            position: absolute; top: 20%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-5deg);
+            background: linear-gradient(to right, #f1c40f, #e67e22);
+            padding: 10px 100px; font-family: 'Luckiest Guy';
+            font-size: 60px; color: #fff;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+            border: 4px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            opacity: 0; transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none; white-space: nowrap; z-index: 200;
+        }
+
+        #damage-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 0 0 rgba(255, 0, 0, 0);
+            transition: box-shadow 0.1s; pointer-events: none;
+        }
+        .hurt-effect { box-shadow: inset 0 0 50px 20px rgba(255, 0, 50, 0.5) !important; }
+
+        .stat-panel {
+            background: rgba(0,0,0,0.5); padding: 10px 20px;
+            border-radius: 10px; color: #fff;
+            margin-top: 20px; text-align: center;
+        }
+
+        /* أنيميشن النقر (Ripple) */
+        @keyframes ripple {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        @keyframes zombieDeath {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.2) rotate(10deg); opacity: 0.8; }
+            100% { transform: scale(0) rotate(-20deg); opacity: 0; }
+        }
+
+        .zombie-dying {
+            animation: zombieDeath 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="damage-overlay"></div>
+        <div id="custom-cursor"></div>
+
+        <div id="ui-layer">
+            <div class="level-indicator">
+                <span>LVL</span>
+                <span id="level-display" style="font-size: 24px; color: #fff;">1</span>
+            </div>
+
+            <div class="time-indicator">
+                <span id="time-icon">☀️</span>
+                <span id="time-text">النهار</span>
+            </div>
+
+            <div class="hud-top-right">
+                <div class="resource-item">
+                    <span id="score-val">0</span>
+                    <div class="hud-map-marker">S</div>
+                </div>
+                <div class="resource-item" style="font-size: 18px; color: var(--fn-purple);">
+                    <span id="zombies-val">0</span>
+                    <span style="margin-right:5px; font-size:14px;">أعداء</span>
+                </div>
+            </div>
+
+            <div class="status-area">
+                <div class="bar-container">
+                    <div class="bar-pattern"></div>
+                    <div id="shield-bar" class="bar-fill shield-bar" style="width: 0%"></div>
+                    <div class="status-text" id="shield-text">0</div>
+                </div>
+                
+                <div class="stamina-container">
+                    <div id="stamina-bar" class="bar-fill stamina-bar" style="width: 100%"></div>
+                </div>
+
+                <div class="bar-container" style="height: 35px;">
+                    <div class="bar-pattern"></div>
+                    <div id="hp-bar" class="bar-fill health-bar" style="width: 100%"></div>
+                    <div class="status-text" id="hp-text">100</div>
+                </div>
+            </div>
+
+            <div class="weapon-slot" id="weapon-ui">
+                <div class="rarity-bg"></div>
+                <div class="ammo-count" id="ammo-val">30</div>
+                <div class="ammo-label">الذخيرة</div>
+            </div>
+            
+            <div id="mobile-controls" class="hidden">
+                <div id="joystick-zone" class="joystick-area">
+                    <div id="joystick-knob" class="joystick-knob"></div>
+                </div>
+                
+                <div id="btn-m-fire" class="mobile-btn">🔥</div>
+                <div id="btn-m-reload" class="mobile-btn">♻️</div>
+                <div id="btn-m-sprint" class="mobile-btn">⚡</div>
+                <div id="btn-m-interact" class="mobile-btn">👋</div>
+            </div>
+
+            <div id="victory-msg" class="victory-banner">VICTORY ROYALE!</div>
+
+            <div id="upgrade-menu" class="hidden">
+                <div class="shop-header">محطة البيع</div>
+                <div class="shop-item">
+                    <div style="display:flex; flex-direction:column;">
+                        <span id="weapon-upgrade-title">ترقية السلاح</span>
+                        <span id="weapon-upgrade-stats" style="font-size:12px; color:#aaa;">التالي: ندرة أعلى</span>
+                    </div>
+                    <button id="btn-upgrade-weapon" class="shop-btn">100 نقطة</button>
+                </div>
+                <div class="shop-item">
+                    <span>تعبئة الدروع (+50)</span>
+                    <button id="btn-buy-shield" class="shop-btn">50 نقطة</button>
+                </div>
+                <div class="shop-item">
+                    <span>حقيبة إسعاف (+50 صحة)</span>
+                    <button id="btn-buy-hp" class="shop-btn" style="background:#e74c3c; box-shadow:0 4px 0 #c0392b;">75 نقطة</button>
+                </div>
+                <div class="shop-item">
+                    <span>ذخيرة (+30)</span>
+                    <button id="btn-buy-ammo" class="shop-btn">20 نقطة</button>
+                </div>
+                <div style="text-align: center; margin-top: 10px; font-size: 14px; color: #95a5a6;">اضغط E للإغلاق</div>
+                <button id="btn-close-shop" class="shop-btn" style="background:#e74c3c; box-shadow:0 4px 0 #c0392b; margin-top: 10px;">إغلاق المتجر</button>
+            </div>
+        </div>
+
+        <!-- الشاشات -->
+        <div id="start-screen" class="menu-screen">
+            <!-- العنوان الجديد بخط محسن -->
+            <h1 class="epic-title" data-text="BATTLE SURVIVAL">BATTLE SURVIVAL</h1>
+            
+            <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+                <button class="btn" onclick="startGame()">انزل للساحة!</button>
+                <button class="btn btn-secondary" onclick="openSkinMenu()">المظهر (Locker)</button>
+                <button class="btn btn-secondary" onclick="openSettingsMenu()">الإعدادات</button>
+            </div>
+        </div>
+
+        <div id="settings-screen" class="menu-screen hidden">
+            <h1>الإعدادات</h1>
+            <div class="settings-panel-wide">
+                <div class="settings-column" style="flex: 1.5;">
+                    <h3 style="color:var(--fn-yellow); margin-bottom:15px; border-bottom:1px solid #555;">التحكم (اضغط لتغيير الزر)</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="key-row"><span>للأمام</span> <button id="bind-up" class="key-bind-btn" onclick="remapKey('up')">W</button></div>
+                        <div class="key-row"><span>للخلف</span> <button id="bind-down" class="key-bind-btn" onclick="remapKey('down')">S</button></div>
+                        <div class="key-row"><span>يسار</span> <button id="bind-left" class="key-bind-btn" onclick="remapKey('left')">A</button></div>
+                        <div class="key-row"><span>يمين</span> <button id="bind-right" class="key-bind-btn" onclick="remapKey('right')">D</button></div>
+                        <div class="key-row"><span>ركض</span> <button id="bind-sprint" class="key-bind-btn" onclick="remapKey('sprint')">SHIFT</button></div>
+                        <div class="key-row"><span>تلقيم</span> <button id="bind-reload" class="key-bind-btn" onclick="remapKey('reload')">R</button></div>
+                        <div class="key-row"><span>إطلاق</span> <button id="bind-shoot" class="key-bind-btn" onclick="remapKey('shoot')">MOUSE</button></div>
+                        <div class="key-row"><span>تفاعل</span> <button id="bind-interact" class="key-bind-btn" onclick="remapKey('interact')">E</button></div>
+                        <div class="key-row"><span>إيقاف</span> <button id="bind-pause" class="key-bind-btn" onclick="remapKey('pause')">ESC</button></div>
+                    </div>
+                </div>
+
+                <div class="settings-column">
+                    <h3 style="color:var(--fn-yellow); margin-bottom:15px; border-bottom:1px solid #555;">عام</h3>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">الصوت</span>
+                        <input type="range" id="vol-slider" min="0" max="100" value="50">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">الجودة</span>
+                        <select id="quality-select" style="padding: 5px; border-radius: 5px;">
+                            <option value="high">عالية</option>
+                            <option value="low">منخفضة</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <span class="setting-label">تحكم الهاتف</span>
+                        <select id="mobile-controls-select" style="padding: 5px; border-radius: 5px;">
+                            <option value="auto">تلقائي</option>
+                            <option value="on">مفعل</option>
+                            <option value="off">معطل</option>
+                        </select>
+                    </div>
+
+                    <h3 style="color:var(--fn-yellow); margin-top:15px; border-bottom:1px solid #555;">شكل المؤشر</h3>
+                    <div class="cursor-grid" id="cursor-grid"></div>
+
+                    <div style="margin-top: auto;">
+                        <button class="btn" style="width: 100%; margin:0; font-size: 20px;" onclick="applySettings()">تطبيق وحفظ</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-secondary" style="margin-top: 20px;" onclick="closeSettingsMenu()">عودة</button>
+        </div>
+
+        <div id="skin-screen" class="menu-screen hidden">
+            <h1>تعديل الشخصية</h1>
+            
+            <div class="skin-layout">
+                <div class="skin-preview-container">
+                    <canvas id="skin-preview-canvas" width="250" height="350"></canvas>
+                    <div style="position: absolute; bottom: 10px; color: #fff; font-size: 14px;">معاينة</div>
+                </div>
+
+                <div class="skin-controls">
+                    <div class="skin-tabs">
+                        <button class="tab-btn active" onclick="switchTab('body')">الجسم</button>
+                        <button class="tab-btn" onclick="switchTab('outfit')">الملابس (مطور)</button>
+                        <button class="tab-btn" onclick="switchTab('shoes')">الأحذية</button>
+                        <button class="tab-btn" onclick="switchTab('head')">القبعات</button>
+                    </div>
+
+                    <div id="skin-grid"></div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" style="flex:1;" onclick="applySkin()">تطبيق وخروج</button>
+                        <button class="btn btn-secondary" onclick="closeSkinMenu()">إلغاء</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pause-screen" class="menu-screen hidden">
+            <!-- خط كلمة مؤقت الجديد -->
+            <h1 class="pause-title">مؤقت</h1>
+            <div class="stat-panel">
+                <div style="font-size: 24px; color: var(--fn-yellow); margin-bottom:10px;">النتائج الحالية</div>
+                <div style="display:flex; gap: 30px;">
+                    <div>☠️ القتلى: <span id="pause-kills">0</span></div>
+                    <div>⭐️ النقاط: <span id="pause-score">0</span></div>
+                </div>
+            </div>
+            <br>
+            <button class="btn" onclick="togglePause()">عودة للعب</button>
+            <button class="btn btn-secondary" onclick="returnToMainMenu()">العودة للرئيسية</button>
+        </div>
+
+        <div id="game-over-screen" class="menu-screen hidden">
+            <h1 style="color: #e74c3c; font-size: 70px; -webkit-text-stroke: 2px #000;">تم القضاء عليك</h1>
+            <p style="font-size: 30px;">المركز: #<span id="rank-val">99</span></p>
+            <div class="stat-panel" style="margin-bottom: 20px;">
+                <div>النقاط النهائية: <span id="final-score" style="color:var(--fn-yellow)">0</span></div>
+            </div>
+            <button class="btn" onclick="startGame()">مباراة جديدة</button>
+            <button class="btn btn-secondary" onclick="returnToMainMenu()">القائمة الرئيسية</button>
+        </div>
+    </div>
+
+<script>
+let globalVolume = 0.5;
+let graphicsQuality = 'high';
+let mobileControlsMode = 'auto'; 
+
+const CURSORS = [
+    { name: "Aim", svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>` },
+    { name: "Dot", svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="white" stroke="black" stroke-width="2"/></svg>` },
+    { name: "Arrow", svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="2"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg>` },
+    { name: "X", svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" stroke="red" stroke-width="3"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>` }
+];
+let currentCursorIdx = 0;
+
+let keyBindings = {
+    up: 'w',
+    down: 's',
+    left: 'a',
+    right: 'd',
+    sprint: 'shift',
+    reload: 'r',
+    shoot: 'mouse', 
+    interact: 'e',
+    pause: 'escape'
+};
+let isRemapping = false;
+let remapAction = null;
+
+let touchInput = {
+    active: false,
+    moveX: 0,
+    moveY: 0,
+    sprint: false,
+    fire: false
+};
+
+const AudioSys = {
+    ctx: null,
+    init: function() {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+    },
+    playTone: function(freq, type, duration, vol = 0.1) {
+        if(!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol * globalVolume, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    playShoot: function() { 
+        this.playTone(600, 'square', 0.1, 0.1); 
+        setTimeout(() => this.playTone(400, 'sawtooth', 0.1, 0.1), 50);
+    },
+    playHit: function() { this.playTone(100, 'sawtooth', 0.1, 0.05); },
+    playShield: function() { 
+        this.playTone(800, 'sine', 0.2, 0.1); 
+        setTimeout(() => this.playTone(1200, 'sine', 0.3, 0.1), 100);
+    },
+    playWin: function() {
+        [400, 500, 600, 800].forEach((f, i) => setTimeout(() => this.playTone(f, 'square', 0.2, 0.2), i*150));
+    },
+    playZombieDeath: function() {
+        this.playTone(80, 'sawtooth', 0.3, 0.1);
+        setTimeout(() => this.playTone(60, 'sawtooth', 0.4, 0.1), 100);
+    }
+};
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+const previewCanvas = document.getElementById('skin-preview-canvas');
+const pCtx = previewCanvas.getContext('2d');
+
+const startScreen = document.getElementById('start-screen');
+const gameOverScreen = document.getElementById('game-over-screen');
+const pauseScreen = document.getElementById('pause-screen');
+const skinScreen = document.getElementById('skin-screen');
+const settingsScreen = document.getElementById('settings-screen');
+const upgradeMenu = document.getElementById('upgrade-menu');
+const cursor = document.getElementById('custom-cursor');
+const mobileControls = document.getElementById('mobile-controls');
+
+// --- بيانات التخصيص المطورة ---
+const SKINS_BODY = [
+    { name: "Default", color: "#e67e22" },
+    { name: "Tan", color: "#d35400" },
+    { name: "Pale", color: "#f1c40f" },
+    { name: "Dark", color: "#5d4037" },
+    { name: "Zombie", color: "#2ecc71" },
+    { name: "Alien", color: "#9b59b6" },
+    { name: "Robot", color: "#95a5a6" },
+    { name: "Ice", color: "#3498db" }
+];
+
+// تم تطوير الملابس لتشمل تفاصيل (vest)
+const SKINS_OUTFIT = [
+    { name: "Recruit", shirt: "#3498db", pants: "#2c3e50", vest: false, detail: "#2980b9" },
+    { name: "Soldier", shirt: "#27ae60", pants: "#1e824c", vest: true, vestColor: "#2c3e50", detail: "#1e824c" },
+    { name: "BlackOps", shirt: "#2c3e50", pants: "#000", vest: true, vestColor: "#111", detail: "#7f8c8d" },
+    { name: "Survivor", shirt: "#d35400", pants: "#5d4037", vest: false, detail: "#e67e22" },
+    { name: "Medic", shirt: "#ecf0f1", pants: "#bdc3c7", vest: true, vestColor: "#e74c3c", detail: "#c0392b" },
+    { name: "Golden", shirt: "#f1c40f", pants: "#2c3e50", vest: true, vestColor: "#f39c12", detail: "#f39c12" },
+    { name: "Neon", shirt: "#e056fd", pants: "#8e44ad", vest: false, detail: "#be2edd" },
+    { name: "Arctic", shirt: "#fff", pants: "#bdc3c7", vest: true, vestColor: "#95a5a6", detail: "#ecf0f1" }
+];
+
+const SKINS_SHOES = [
+    { name: "Boots", color: "#000000" },
+    { name: "White", color: "#ecf0f1" },
+    { name: "Red", color: "#c0392b" },
+    { name: "Brown", color: "#5d4037" },
+    { name: "Blue", color: "#2980b9" },
+    { name: "Gold", color: "#f1c40f" },
+    { name: "Green", color: "#27ae60" },
+    { name: "Pink", color: "#e056fd" }
+];
+
+const SKINS_HEAD = [
+    { name: "None", type: "none", color: "transparent" },
+    { name: "Iron Helm", type: "helmet", color: "#7f8c8d" },
+    { name: "Straw Hat", type: "hat", color: "#f1c40f" },
+    { name: "Wool Cap", type: "cap", color: "#34495e" },
+    { name: "Red Bandana", type: "bandana", color: "#c0392b" },
+    { name: "Green Beret", type: "cap", color: "#27ae60" },
+    { name: "Gold Crown", type: "crown", color: "#f1c40f" },
+    { name: "Headphones", type: "phones", color: "#3498db" }
+];
+
+let currentCustomization = { body: 0, outfit: 0, shoes: 0, head: 0 };
+let tempCustomization = { ...currentCustomization };
+let currentTab = 'body';
+let skinPreviewAnimationId = null;
+
+const WEAPON_PRICES = [100, 250, 500, 1000, 9999];
+const WEAPON_NAMES = ['عادي', 'غير شائع', 'نادر', 'ملحمي', 'أسطوري'];
+
+let gameState = 'START';
+let lastTime = 0;
+let keys = {};
+let mouse = { x: 0, y: 0, worldX: 0, worldY: 0, isDown: false };
+const camera = { x: 0, y: 0 };
+const world = { width: 2500, height: 2500 };
+
+const player = {
+    x: 1000, y: 1000,
+    radius: 20,
+    angle: 0,
+    speed: 5,
+    sprintSpeed: 9,
+    hp: 100, maxHp: 100,
+    shield: 0, maxShield: 100,
+    ammo: 30, maxAmmo: 30,
+    score: 0,
+    kills: 0,
+    weaponLevel: 0,
+    sprinting: false,
+    stamina: 100,
+    fatigued: false, 
+    iframe: 0
+};
+
+const RARITY_COLORS = ['#95a5a6', '#2ecc71', '#3498db', '#9b59b6', '#f1c40f'];
+
+let bullets = [];
+let zombies = [];
+let particles = [];
+let damageNumbers = [];
+let pickups = [];
+let stations = [];
+let environment = [];
+let rain = [];
+
+let level = 1;
+let zombiesToSpawn = 0;
+let spawnTimer = 0;
+let screenShake = 0;
+
+let gameTime = 0; 
+let daySpeed = 0.005;
+let isRaining = false;
+let weatherTimer = 0;
+
+let dyingZombies = []; 
+
+function init() {
+    resize();
+    switchTab('body');
+    updateCursor(0);
+    renderCursorOptions();
+    initMobileControls();
+    
+    window.addEventListener('resize', resize);
+    
+    window.addEventListener('keydown', e => {
+        if (isRemapping) {
+            e.preventDefault();
+            if (e.key === 'Tab' || e.key === 'Meta') return;
+
+            const keyName = e.key.toLowerCase();
+            keyBindings[remapAction] = keyName;
+            
+            document.getElementById(`bind-${remapAction}`).textContent = keyName.toUpperCase();
+            document.getElementById(`bind-${remapAction}`).classList.remove('waiting');
+            
+            isRemapping = false;
+            remapAction = null;
+            return;
+        }
+
+        const key = e.key.toLowerCase();
+        keys[key] = true;
+        
+        if (gameState === 'PLAYING') {
+            if (key === keyBindings.reload) reload();
+            if (key === keyBindings.pause) togglePause();
+            if (key === keyBindings.interact) interact();
+            if (key === keyBindings.shoot && keyBindings.shoot !== 'mouse') shoot();
+        } else if (gameState === 'PAUSED' && key === keyBindings.pause) {
+            togglePause();
+        }
+    });
+    
+    window.addEventListener('keyup', e => {
+        const key = e.key.toLowerCase();
+        keys[key] = false;
+    });
+
+    window.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+    });
+
+    window.addEventListener('mousedown', (e) => {
+        mouse.isDown = true;
+        if(gameState === 'PLAYING') {
+            if (keyBindings.shoot === 'mouse') {
+                shoot();
+            }
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        mouse.isDown = false;
+    });
+
+    document.getElementById('btn-close-shop').addEventListener('click', () => {
+        upgradeMenu.classList.add('hidden');
+    });
+
+    document.getElementById('btn-upgrade-weapon').addEventListener('click', () => tryBuy('weapon'));
+    document.getElementById('btn-buy-ammo').addEventListener('click', () => tryBuy('ammo'));
+    document.getElementById('btn-buy-shield').addEventListener('click', () => tryBuy('shield'));
+    document.getElementById('btn-buy-hp').addEventListener('click', () => tryBuy('hp'));
+
+    // إضافة صوت للنقر على الأزرار
+    document.querySelectorAll('.btn, .shop-btn, .key-bind-btn, .tab-btn').forEach(button => {
+        button.addEventListener('mousedown', function(e) {
+            if(AudioSys.ctx) AudioSys.playTone(200, 'sine', 0.1, 0.1);
+        });
+    });
+
+    requestAnimationFrame(gameLoop);
+}
+
+function initMobileControls() {
+    const joystickZone = document.getElementById('joystick-zone');
+    const joystickKnob = document.getElementById('joystick-knob');
+    let joystickCenter = { x: 0, y: 0 };
+    let joystickTouchId = null;
+
+    joystickZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        joystickTouchId = touch.identifier;
+        const rect = joystickZone.getBoundingClientRect();
+        joystickCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+        touchInput.active = true;
+    }, {passive: false});
+
+    joystickZone.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for(let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === joystickTouchId) {
+                const touch = e.changedTouches[i];
+                const dx = touch.clientX - joystickCenter.x;
+                const dy = touch.clientY - joystickCenter.y;
+                const distance = Math.min(Math.hypot(dx, dy), 50); 
+                const angle = Math.atan2(dy, dx);
+                
+                joystickKnob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*distance}px), calc(-50% + ${Math.sin(angle)*distance}px))`;
+                
+                touchInput.moveX = Math.cos(angle) * (distance/50);
+                touchInput.moveY = Math.sin(angle) * (distance/50);
+            }
+        }
+    }, {passive: false});
+
+    const resetJoystick = () => {
+        joystickTouchId = null;
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+        touchInput.moveX = 0;
+        touchInput.moveY = 0;
+        touchInput.active = false;
+    };
+
+    joystickZone.addEventListener('touchend', resetJoystick);
+    joystickZone.addEventListener('touchcancel', resetJoystick);
+
+    const setupBtn = (id, actionStart, actionEnd) => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); actionStart(); }, {passive: false});
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); if(actionEnd) actionEnd(); }, {passive: false});
+    };
+
+    setupBtn('btn-m-fire', () => { touchInput.fire = true; shoot(); }, () => { touchInput.fire = false; });
+    setupBtn('btn-m-reload', reload);
+    setupBtn('btn-m-interact', interact);
+    
+    const sprintBtn = document.getElementById('btn-m-sprint');
+    sprintBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        touchInput.sprint = !touchInput.sprint; 
+        sprintBtn.style.background = touchInput.sprint ? "var(--fn-yellow)" : "rgba(0,0,0,0.5)";
+    }, {passive: false});
+}
+
+function checkMobileMode() {
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const mode = document.getElementById('mobile-controls-select').value;
+    
+    if (mode === 'on' || (mode === 'auto' && isTouch)) {
+        mobileControls.classList.remove('hidden');
+    } else {
+        mobileControls.classList.add('hidden');
+    }
+}
+
+function renderCursorOptions() {
+    const grid = document.getElementById('cursor-grid');
+    grid.innerHTML = '';
+    CURSORS.forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'cursor-option' + (i === currentCursorIdx ? ' selected' : '');
+        div.innerHTML = `<img src='${c.svg}' class="cursor-icon">`;
+        div.onclick = () => {
+            currentCursorIdx = i;
+            renderCursorOptions();
+            updateCursor(i);
+        };
+        grid.appendChild(div);
+    });
+}
+
+function updateCursor(idx) {
+    const c = CURSORS[idx];
+    const cursorEl = document.getElementById('custom-cursor');
+    cursorEl.style.backgroundImage = `url('${c.svg}')`;
+}
+
+function remapKey(action) {
+    if(isRemapping) return;
+    isRemapping = true;
+    remapAction = action;
+    
+    const btn = document.getElementById(`bind-${action}`);
+    btn.textContent = "اضغط...";
+    btn.classList.add('waiting');
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    const btns = document.querySelectorAll('.tab-btn');
+    if(tab === 'body') btns[0].classList.add('active');
+    if(tab === 'outfit') btns[1].classList.add('active');
+    if(tab === 'shoes') btns[2].classList.add('active');
+    if(tab === 'head') btns[3].classList.add('active');
+    renderSkinGrid();
+}
+
+function renderSkinGrid() {
+    const grid = document.getElementById('skin-grid');
+    grid.innerHTML = '';
+    let items = [];
+    let selectedIndex = 0;
+    if (currentTab === 'body') { items = SKINS_BODY; selectedIndex = tempCustomization.body; }
+    else if (currentTab === 'outfit') { items = SKINS_OUTFIT; selectedIndex = tempCustomization.outfit; }
+    else if (currentTab === 'shoes') { items = SKINS_SHOES; selectedIndex = tempCustomization.shoes; }
+    else if (currentTab === 'head') { items = SKINS_HEAD; selectedIndex = tempCustomization.head; }
+
+    items.forEach((item, index) => {
+        const el = document.createElement('div');
+        el.className = 'skin-option' + (index === selectedIndex ? ' selected' : '');
+        el.onclick = () => {
+            if (currentTab === 'body') tempCustomization.body = index;
+            else if (currentTab === 'outfit') tempCustomization.outfit = index;
+            else if (currentTab === 'shoes') tempCustomization.shoes = index;
+            else if (currentTab === 'head') tempCustomization.head = index;
+            renderSkinGrid(); 
+        };
+        const preview = document.createElement('div');
+        preview.className = 'preview-box';
+        
+        if (currentTab === 'body') {
+            preview.innerHTML = `<div class="preview-circle" style="background:${item.color};"></div>`;
+        } else if (currentTab === 'outfit') {
+            // عرض الملابس بشكل أفضل في القائمة
+            preview.innerHTML = `<div style="display:flex; flex-direction:column; gap:2px; align-items:center;">
+                <div style="width:30px; height:20px; background:${item.shirt}; border-radius:3px; position:relative; border-bottom: 2px solid ${item.detail}">
+                   ${item.vest ? `<div style="position:absolute; top:2px; left:5px; width:20px; height:16px; background:${item.vestColor}; border-radius:2px;"></div>` : ''}
+                </div>
+                <div style="width:30px; height:15px; background:${item.pants}; border-radius:3px;"></div>
+            </div>`;
+        } else if (currentTab === 'shoes') {
+            preview.innerHTML = `<div style="display:flex; gap:5px;">
+                <div style="width:15px; height:25px; background:${item.color}; border-radius:5px;"></div>
+                <div style="width:15px; height:25px; background:${item.color}; border-radius:5px;"></div>
+            </div>`;
+        } else if (currentTab === 'head') {
+            if(item.type === 'none') preview.innerHTML = '❌';
+            else preview.innerHTML = `<div class="preview-circle" style="background:${item.color}; border:2px solid #fff;"></div>`;
+        }
+        el.appendChild(preview);
+        grid.appendChild(el);
+    });
+}
+
+function openSkinMenu() {
+    startScreen.classList.add('hidden');
+    skinScreen.classList.remove('hidden');
+    tempCustomization = { ...currentCustomization };
+    switchTab('body');
+    animateSkinPreview();
+}
+
+function closeSkinMenu() {
+    skinScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    if (skinPreviewAnimationId) cancelAnimationFrame(skinPreviewAnimationId);
+}
+
+function applySkin() {
+    currentCustomization = { ...tempCustomization };
+    closeSkinMenu();
+}
+
+function animateSkinPreview() {
+    pCtx.clearRect(0, 0, 250, 350);
+    const centerX = 125;
+    const centerY = 175;
+    const scale = 3.5; 
+
+    pCtx.save();
+    pCtx.translate(centerX, centerY);
+    pCtx.scale(scale, scale);
+    const angle = Math.sin(Date.now() / 1000) * 0.5;
+    pCtx.rotate(angle);
+
+    // استخدام الدالة المحدثة لرسم اللاعب في المعاينة
+    drawPlayerCharacter(pCtx, 0, 0, 20, tempCustomization);
+
+    pCtx.restore();
+    skinPreviewAnimationId = requestAnimationFrame(animateSkinPreview);
+}
+
+function openSettingsMenu() {
+    startScreen.classList.add('hidden');
+    settingsScreen.classList.remove('hidden');
+}
+
+function closeSettingsMenu() {
+    settingsScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+}
+
+function applySettings() {
+    const vol = document.getElementById('vol-slider').value;
+    const qual = document.getElementById('quality-select').value;
+    const mob = document.getElementById('mobile-controls-select').value;
+    
+    globalVolume = vol / 100;
+    graphicsQuality = qual;
+    mobileControlsMode = mob;
+    
+    const btn = document.querySelector('#settings-screen .btn');
+    const oldText = btn.textContent;
+    btn.textContent = "تم الحفظ!";
+    btn.style.background = "#2ecc71";
+    setTimeout(() => {
+        btn.textContent = oldText;
+        btn.style.background = "";
+    }, 1000);
+}
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+function startGame() {
+    AudioSys.init();
+    checkMobileMode();
+    document.body.classList.add('game-active');
+
+    player.x = world.width / 2;
+    player.y = world.height / 2;
+    player.hp = player.maxHp;
+    player.shield = 0;
+    player.ammo = player.maxAmmo;
+    player.score = 0;
+    player.kills = 0;
+    player.weaponLevel = 0;
+    player.stamina = 100;
+    player.fatigued = false;
+    level = 1;
+    
+    gameTime = 0.2;
+    isRaining = false;
+    
+    bullets = [];
+    zombies = [];
+    particles = [];
+    damageNumbers = [];
+    pickups = [];
+    rain = [];
+    dyingZombies = [];
+    
+    createEnvironment();
+    createStations();
+    startLevel();
+    
+    gameState = 'PLAYING';
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    pauseScreen.classList.add('hidden');
+    upgradeMenu.classList.add('hidden'); 
+    updateHUD();
+    updateWeaponUI();
+    updateShopUI();
+}
+
+function returnToMainMenu() {
+    gameState = 'START';
+    document.body.classList.remove('game-active');
+    pauseScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    upgradeMenu.classList.add('hidden'); 
+    mobileControls.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+}
+
+function startLevel() {
+    zombiesToSpawn = 5 + (level * 3);
+    spawnTimer = 0;
+    document.getElementById('level-display').textContent = level;
+
+    if(level > 1) {
+        if(level % 5 === 0) showVictoryMsg(`BOSS WAVE ${level}!`);
+        else showVictoryMsg(`WAVE ${level}`);
+    }
+}
+
+function showVictoryMsg(text) {
+    const banner = document.getElementById('victory-msg');
+    banner.textContent = text;
+    banner.style.opacity = 1;
+    banner.style.transform = "translate(-50%, -50%) rotate(-5deg) scale(1.2)";
+    AudioSys.playWin();
+    setTimeout(() => {
+        banner.style.opacity = 0;
+        banner.style.transform = "translate(-50%, -50%) rotate(-5deg) scale(1)";
+    }, 2500);
+}
+
+function togglePause() {
+    if(gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        document.body.classList.remove('game-active');
+        document.getElementById('pause-kills').textContent = player.kills;
+        document.getElementById('pause-score').textContent = player.score;
+        pauseScreen.classList.remove('hidden');
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        document.body.classList.add('game-active');
+        pauseScreen.classList.add('hidden');
+    }
+}
+
+function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+    lastTime = timestamp;
+
+    if (gameState === 'PLAYING') {
+        update(dt);
+        draw();
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+function update(dt) {
+    updateWeather(dt);
+
+    let targetCamX = player.x - canvas.width / 2;
+    let targetCamY = player.y - canvas.height / 2;
+    
+    if (screenShake > 0) {
+        targetCamX += (Math.random() - 0.5) * screenShake;
+        targetCamY += (Math.random() - 0.5) * screenShake;
+        screenShake *= 0.9;
+        if(screenShake < 0.5) screenShake = 0;
+    }
+
+    camera.x += (targetCamX - camera.x) * 0.1; 
+    camera.y += (targetCamY - camera.y) * 0.1;
+    
+    camera.x = Math.max(0, Math.min(world.width - canvas.width, camera.x));
+    camera.y = Math.max(0, Math.min(world.height - canvas.height, camera.y));
+    
+    if (touchInput.active && (touchInput.moveX !== 0 || touchInput.moveY !== 0)) {
+        player.angle = Math.atan2(touchInput.moveY, touchInput.moveX);
+    } else {
+        mouse.worldX = mouse.x + camera.x;
+        mouse.worldY = mouse.y + camera.y;
+        player.angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
+    }
+    
+    let moveX = 0, moveY = 0;
+    
+    if (keys[keyBindings.up]) moveY = -1;
+    if (keys[keyBindings.down]) moveY = 1;
+    if (keys[keyBindings.left]) moveX = -1;
+    if (keys[keyBindings.right]) moveX = 1;
+    
+    if (touchInput.active) {
+        moveX = touchInput.moveX;
+        moveY = touchInput.moveY;
+    }
+    
+    const isSprintingInput = (keys[keyBindings.sprint] || touchInput.sprint) && (moveX!=0 || moveY!=0);
+    
+    player.sprinting = isSprintingInput && !player.fatigued && player.stamina > 0;
+    
+    const currentSpeed = player.sprinting ? player.sprintSpeed : player.speed;
+    
+    if(player.sprinting) {
+        player.stamina -= 25 * dt; 
+        if(player.stamina <= 0) {
+            player.stamina = 0;
+            player.fatigued = true; 
+        }
+    } else {
+        if(player.stamina < 100) {
+            player.stamina += 15 * dt;
+            if(player.fatigued && player.stamina > 30) {
+                player.fatigued = false;
+            }
+        }
+    }
+
+    if (moveX !== 0 || moveY !== 0) {
+        if (!touchInput.active) {
+            const len = Math.sqrt(moveX*moveX + moveY*moveY);
+            if(len > 0) { moveX /= len; moveY /= len; }
+        }
+        
+        player.x += moveX * currentSpeed;
+        player.y += moveY * currentSpeed;
+        player.x = Math.max(player.radius, Math.min(world.width - player.radius, player.x));
+        player.y = Math.max(player.radius, Math.min(world.height - player.radius, player.y));
+    }
+
+    environment.forEach(obj => {
+        if(obj.type === 'bush' || obj.type === 'tree') {
+            const d = Math.hypot(player.x - obj.x, player.y - obj.y);
+            if (d < obj.radius + player.radius + 10) {
+                const pushAngle = Math.atan2(obj.y - player.y, obj.x - player.x);
+                obj.sway = Math.cos(pushAngle) * 0.5;
+                obj.interacted = 1.0;
+            } else {
+                obj.interacted *= 0.9;
+            }
+        }
+    });
+
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += Math.cos(b.angle) * b.speed;
+        b.y += Math.sin(b.angle) * b.speed;
+        b.life -= dt;
+        
+        if (b.life <= 0 || b.x < 0 || b.x > world.width || b.y < 0 || b.y > world.height) {
+            bullets.splice(i, 1);
+            continue;
+        }
+
+        let hit = false;
+        for (let j = zombies.length - 1; j >= 0; j--) {
+            const z = zombies[j];
+            const dist = Math.hypot(b.x - z.x, b.y - z.y);
+            if (dist < z.radius + 10) {
+                damageZombie(z, j, b.damage);
+                hit = true;
+                const particleCount = graphicsQuality === 'high' ? 3 : 1;
+                for(let k=0; k<particleCount; k++) particles.push({
+                    x: b.x, y: b.y, 
+                    vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, 
+                    life: 0.5, color: '#f1c40f', size: 3
+                });
+                break;
+            }
+        }
+        if (hit) bullets.splice(i, 1);
+    }
+
+    if (zombiesToSpawn > 0) {
+        spawnTimer -= dt;
+        if (spawnTimer <= 0) {
+            spawnZombie();
+            spawnTimer = Math.max(0.5, 2.0 - (level * 0.1));
+        }
+    } else if (zombies.length === 0) {
+        level++;
+        player.score += 100 + (level * 50);
+        AudioSys.playWin();
+        startLevel();
+    }
+
+    zombies.forEach(z => {
+        const angle = Math.atan2(player.y - z.y, player.x - z.x);
+        z.x += Math.cos(angle) * z.speed;
+        z.y += Math.sin(angle) * z.speed;
+        
+        const distToPlayer = Math.hypot(player.x - z.x, player.y - z.y);
+        if (distToPlayer < z.radius + player.radius) {
+            damagePlayer(z.dmg);
+        }
+    });
+
+    for (let i = dyingZombies.length - 1; i >= 0; i--) {
+        dyingZombies[i].animationTime -= dt;
+        if (dyingZombies[i].animationTime <= 0) {
+            dyingZombies.splice(i, 1);
+        }
+    }
+
+    updateParticles(dt);
+    updatePickups(dt);
+    updateDamageNumbers(dt);
+    updateHUD();
+}
+
+function createEnvironment() {
+    environment = [];
+    for(let i=0; i<150; i++) {
+        const type = Math.random() > 0.3 ? 'bush' : 'tree';
+        const x = Math.random() * world.width;
+        const y = Math.random() * world.height;
+        const radius = type === 'tree' ? 30 : 15;
+        const baseColor = type === 'tree' ? [34, 139, 34] : [50, 205, 50]; 
+        
+        environment.push({
+            type: type,
+            x: x,
+            y: y,
+            radius: radius,
+            baseColor: baseColor,
+            swayOffset: Math.random() * 100,
+            interacted: 0
+        });
+    }
+    environment.sort((a, b) => a.y - b.y);
+}
+
+function updateWeather(dt) {
+    gameTime += daySpeed * dt;
+    if (gameTime >= 1) gameTime = 0;
+
+    weatherTimer += dt;
+    if (weatherTimer > 30) {
+        if (Math.random() > 0.5) isRaining = !isRaining;
+        weatherTimer = 0;
+    }
+
+    const timeIcon = document.getElementById('time-icon');
+    const timeText = document.getElementById('time-text');
+    if (gameTime < 0.25) { timeIcon.textContent = '🌅'; timeText.textContent = 'شروق'; }
+    else if (gameTime < 0.7) { timeIcon.textContent = '☀️'; timeText.textContent = 'نهار'; }
+    else if (gameTime < 0.85) { timeIcon.textContent = '🌇'; timeText.textContent = 'غروب'; }
+    else { timeIcon.textContent = '🌙'; timeText.textContent = 'ليل'; }
+
+    if (isRaining && graphicsQuality === 'high') {
+        for(let i=0; i<5; i++) {
+            rain.push({
+                x: Math.random() * canvas.width + camera.x, 
+                y: camera.y - 10,
+                speed: 15 + Math.random() * 10,
+                len: 10 + Math.random() * 10
+            });
+        }
+    } else if (isRaining) {
+         if(Math.random() > 0.5) {
+            rain.push({
+                x: Math.random() * canvas.width + camera.x, 
+                y: camera.y - 10,
+                speed: 15 + Math.random() * 10,
+                len: 10 + Math.random() * 10
+            });
+         }
+    }
+    
+    for (let i = rain.length - 1; i >= 0; i--) {
+        const r = rain[i];
+        r.y += r.speed;
+        r.x -= 2;
+        if (r.y > camera.y + canvas.height) rain.splice(i, 1);
+    }
+}
+
+function draw() {
+    let isNight = false;
+    
+    if (gameTime >= 0.8 || gameTime < 0.2) {
+        isNight = true;
+    }
+
+    if (isNight) {
+        ctx.fillStyle = '#101820'; 
+    } else {
+        ctx.fillStyle = '#64C64C'; 
+    }
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    ctx.translate(-camera.x, -camera.y);
+
+    ctx.strokeStyle = isNight ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = 2;
+    const gridSize = 100;
+    const startX = Math.floor(camera.x / gridSize) * gridSize;
+    const startY = Math.floor(camera.y / gridSize) * gridSize;
+    for(let x=startX; x<camera.x+canvas.width; x+=gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, camera.y); ctx.lineTo(x, camera.y+canvas.height); ctx.stroke();
+    }
+    for(let y=startY; y<camera.y+canvas.height; y+=gridSize) {
+        ctx.beginPath(); ctx.moveTo(camera.x, y); ctx.lineTo(camera.x+canvas.width, y); ctx.stroke();
+    }
+
+    const timeSway = Math.sin(Date.now() / 500);
+    
+    let drawQueue = [];
+    environment.forEach(obj => drawQueue.push({type: 'env', obj: obj}));
+    drawQueue.push({type: 'player', y: player.y});
+    zombies.forEach(z => drawQueue.push({type: 'zombie', obj: z, y: z.y}));
+    stations.forEach(s => drawQueue.push({type: 'station', obj: s, y: s.y}));
+    drawQueue.sort((a, b) => a.y - b.y);
+
+    drawQueue.forEach(item => {
+        if (item.type === 'station') drawStation(item.obj);
+        else if (item.type === 'env') drawEnvironmentItem(item.obj, timeSway, isNight);
+        else if (item.type === 'player') drawPlayer();
+        else if (item.type === 'zombie') drawZombie(item.obj);
+    });
+
+    dyingZombies.forEach(z => {
+        drawDyingZombie(z);
+    });
+
+    pickups.forEach(p => {
+        ctx.globalAlpha = 0.5;
+        const color = p.type === 'shield' ? '#3498db' : '#f1c40f';
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 5, p.y);
+        ctx.lineTo(p.x + 5, p.y);
+        ctx.lineTo(p.x + 15, p.y - 100); 
+        ctx.lineTo(p.x - 15, p.y - 100);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+
+    bullets.forEach(b => {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    });
+
+    particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+    ctx.globalAlpha = 1;
+
+    ctx.font = 'bold 24px "Luckiest Guy"';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'black';
+    damageNumbers.forEach(n => {
+        ctx.fillStyle = n.crit ? '#f1c40f' : '#fff';
+        const txt = Math.floor(n.val);
+        ctx.strokeText(txt, n.x, n.y);
+        ctx.fillText(txt, n.x, n.y);
+    });
+
+    if (isRaining) {
+        ctx.strokeStyle = 'rgba(174, 194, 224, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        rain.forEach(r => {
+            ctx.moveTo(r.x, r.y);
+            ctx.lineTo(r.x - 2, r.y + r.len);
+        });
+        ctx.stroke();
+    }
+
+    if (isNight) {
+        let alpha = 0.4;
+        if(gameTime > 0.85 || gameTime < 0.15) alpha = 0.6;
+
+        ctx.fillStyle = `rgba(0, 5, 20, ${alpha})`;
+        ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height);
+    }
+
+    ctx.restore();
+}
+
+function drawStation(s) {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(s.x, s.y+20, 30, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#34495e';
+    ctx.fillRect(s.x - 20, s.y - 40, 40, 60);
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(s.x - 15, s.y - 30, 30, 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("SHOP", s.x, s.y - 15);
+}
+
+function drawEnvironmentItem(obj, timeSway, isNight) {
+    let sway = Math.sin(timeSway + obj.swayOffset) * 2; 
+    if (obj.interacted > 0.1) sway += (Math.random() - 0.5) * 5 * obj.interacted;
+
+    let r = obj.baseColor[0];
+    let g = obj.baseColor[1];
+    let b = obj.baseColor[2];
+
+    if (isNight) {
+        r = r * 0.3;     
+        g = g * 0.4 + 20; 
+        b = b * 0.5 + 60; 
+    } else {
+        r += Math.sin(timeSway) * 5;
+    }
+    
+    const finalColor = `rgb(${r},${g},${b})`;
+
+    if (obj.type === 'tree') {
+        ctx.fillStyle = isNight ? '#1e1614' : '#795548'; 
+        ctx.fillRect(obj.x - 5, obj.y - 10, 10, 15);
+        ctx.fillStyle = finalColor;
+        ctx.beginPath();
+        ctx.arc(obj.x + sway, obj.y - 30, obj.radius, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.arc(obj.x + sway - 5, obj.y - 35, obj.radius/2, 0, Math.PI*2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = finalColor;
+        ctx.beginPath();
+        ctx.ellipse(obj.x + sway, obj.y, obj.radius, obj.radius * 0.7, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function drawZombie(z) {
+    ctx.save();
+    
+    const dyingZombie = dyingZombies.find(dz => dz.id === z.id);
+    if (dyingZombie) {
+        const progress = 1 - (dyingZombie.animationTime / 0.5);
+        ctx.translate(z.x, z.y);
+        ctx.scale(1 - progress * 0.3, 1 - progress * 0.3);
+        ctx.rotate(progress * Math.PI / 6);
+        ctx.translate(-z.x, -z.y);
+        ctx.globalAlpha = 1 - progress;
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(z.x, z.y+5, z.radius, z.radius/2, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = z.color; 
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI*2); ctx.fill();
+    
+    if (z.type === 'boss') {
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI*2); ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, Math.PI, 0); ctx.fill();
+
+    const angle = Math.atan2(player.y - z.y, player.x - z.x);
+    const eyeX = z.x + Math.cos(angle) * (z.radius * 0.4);
+    const eyeY = z.y + Math.sin(angle) * (z.radius * 0.4);
+    
+    ctx.fillStyle = '#f1c40f'; 
+    const eyeSize = z.type === 'boss' ? 5 : 3;
+    ctx.beginPath(); ctx.arc(eyeX - (z.radius*0.2), eyeY, eyeSize, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(eyeX + (z.radius*0.2), eyeY, eyeSize, 0, Math.PI*2); ctx.fill();
+
+    if (z.hp < z.maxHp) {
+        const barWidth = z.radius * 2;
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(z.x - barWidth/2, z.y - z.radius - 10, barWidth, 5);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(z.x - barWidth/2, z.y - z.radius - 10, barWidth * (z.hp/z.maxHp), 5);
+    }
+    
+    ctx.restore();
+}
+
+function drawDyingZombie(z) {
+    ctx.save();
+    
+    const progress = 1 - (z.animationTime / 0.5);
+    ctx.translate(z.x, z.y);
+    ctx.scale(1 - progress * 0.3, 1 - progress * 0.3);
+    ctx.rotate(progress * Math.PI / 6);
+    ctx.translate(-z.x, -z.y);
+    ctx.globalAlpha = 1 - progress;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(z.x, z.y+5, z.radius, z.radius/2, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = z.color; 
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI*2); ctx.fill();
+    
+    if (z.type === 'boss') {
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI*2); ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, Math.PI, 0); ctx.fill();
+
+    const eyeX = z.x;
+    const eyeY = z.y;
+    
+    ctx.fillStyle = '#f1c40f'; 
+    const eyeSize = z.type === 'boss' ? 5 : 3;
+    ctx.beginPath(); ctx.arc(eyeX - (z.radius*0.2), eyeY, eyeSize, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(eyeX + (z.radius*0.2), eyeY, eyeSize, 0, Math.PI*2); ctx.fill();
+
+    ctx.restore();
+}
+
+// دالة رسم موحدة تستخدم في اللعبة وفي المعاينة
+function drawPlayerCharacter(context, x, y, r, customization) {
+    const bodyColor = SKINS_BODY[customization.body].color;
+    const outfit = SKINS_OUTFIT[customization.outfit];
+    const shoes = SKINS_SHOES[customization.shoes];
+    const head = SKINS_HEAD[customization.head];
+
+    context.fillStyle = shoes.color;
+    context.beginPath(); context.ellipse(x+10, y+5, 8, 5, 0, 0, Math.PI*2); context.fill(); 
+    context.beginPath(); context.ellipse(x+10, y-5, 8, 5, 0, 0, Math.PI*2); context.fill(); 
+
+    context.fillStyle = bodyColor;
+    context.beginPath(); context.arc(x+15, y+12, 6, 0, Math.PI*2); context.fill();
+    context.beginPath(); context.arc(x+15, y-12, 6, 0, Math.PI*2); context.fill();
+
+    context.fillStyle = outfit.shirt;
+    context.beginPath(); context.arc(x, y, r, 0, Math.PI*2); context.fill();
+    
+    // تفاصيل الملابس المضافة (خطوط أو زخرفة)
+    context.fillStyle = outfit.detail;
+    context.fillRect(x-5, y-10, 10, 20); 
+    
+    // إضافة "السترة" (Vest) إذا كانت موجودة
+    if(outfit.vest) {
+        context.fillStyle = outfit.vestColor;
+        // رسم سترة حول الجسم
+        context.beginPath();
+        context.arc(x, y, r + 2, Math.PI/2, Math.PI*1.5); 
+        context.fill();
+        context.fillRect(x-r, y-5, 5, 10); // تفاصيل خلفية
+    }
+
+    context.fillStyle = outfit.shirt; // تغطية المنتصف
+    context.beginPath(); context.arc(x, y, r - 5, 0, Math.PI*2); context.fill();
+
+    context.fillStyle = outfit.pants; 
+    context.beginPath(); context.arc(x, y-12, 6, 0, Math.PI*2); context.fill();
+    context.beginPath(); context.arc(x, y+12, 6, 0, Math.PI*2); context.fill();
+
+    // اليدين
+    context.fillStyle = '#34495e';
+    context.fillRect(x-14, y-8, 8, 16);
+    context.strokeStyle = '#2c3e50';
+    context.lineWidth = 2;
+    context.strokeRect(x-14, y-8, 8, 16);
+
+    if (head.type !== 'none') {
+        context.fillStyle = head.color;
+        if (head.type === 'helmet') {
+            context.beginPath(); context.arc(x, y, r - 2, 0, Math.PI*2); context.fill();
+            context.fillStyle = '#bdc3c7'; 
+            context.beginPath(); context.arc(x+2, y-2, 5, 0, Math.PI*2); context.fill();
+        } else if (head.type === 'hat' || head.type === 'crown') {
+            context.beginPath(); context.arc(x, y, r + 2, 0, Math.PI*2); context.fill();
+            context.fillStyle = head.color; 
+            context.filter = 'brightness(80%)';
+            context.beginPath(); context.arc(x, y, r - 5, 0, Math.PI*2); context.fill();
+            context.filter = 'none';
+        } else if (head.type === 'cap') {
+            context.beginPath(); context.arc(x-2, y, r - 1, 0, Math.PI*2); context.fill();
+            context.fillRect(x+5, y-10, 10, 20); 
+        } else if (head.type === 'phones') {
+            context.fillRect(x-5, y-22, 10, 44); 
+            context.beginPath(); context.arc(x, y-15, 8, 0, Math.PI*2); context.fill();
+            context.beginPath(); context.arc(x, y+15, 8, 0, Math.PI*2); context.fill();
+        }
+    }
+}
+
+function drawPlayer() {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(player.angle);
+
+    // استخدام دالة الرسم الموحدة
+    drawPlayerCharacter(ctx, 0, 0, player.radius, currentCustomization);
+
+    // رسم السلاح
+    const weaponColor = '#2c3e50';
+    const rarityColor = RARITY_COLORS[Math.min(player.weaponLevel, 4)];
+    
+    ctx.fillStyle = weaponColor;
+    
+    if (player.weaponLevel === 0) {
+        ctx.fillRect(10, -3, 15, 6);
+        ctx.strokeStyle = rarityColor;
+        ctx.strokeRect(10, -3, 15, 6);
+    } else if (player.weaponLevel === 1) {
+        ctx.fillRect(10, -4, 25, 8);
+        ctx.fillRect(15, 4, 6, 6);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(35, -2, 5, 4);
+        ctx.strokeStyle = rarityColor;
+        ctx.strokeRect(10, -4, 25, 8);
+    } else if (player.weaponLevel === 2) {
+        ctx.fillRect(5, -4, 35, 8);
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(-5, -3, 10, 6);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(40, -2, 8, 4);
+        ctx.strokeStyle = rarityColor;
+        ctx.strokeRect(5, -4, 35, 8);
+    } else if (player.weaponLevel === 3) {
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(5, -5, 40, 10);
+        ctx.fillRect(45, -2, 15, 4);
+        ctx.fillStyle = '#000'; 
+        ctx.fillRect(15, -8, 10, 3);
+        ctx.strokeStyle = rarityColor;
+        ctx.strokeRect(5, -5, 40, 10);
+    } else {
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(10, -8, 30, 16);
+        ctx.fillStyle = rarityColor;
+        ctx.fillRect(40, -6, 15, 4);
+        ctx.fillRect(40, 2, 15, 4);
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = rarityColor;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(15, -2, 20, 4);
+        ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+}
+
+function spawnZombie() {
+    const edge = Math.floor(Math.random() * 4);
+    let x, y, buffer = 50;
+    if (edge === 0) { x = camera.x + Math.random() * canvas.width; y = camera.y - buffer; }
+    else if (edge === 1) { x = camera.x + canvas.width + buffer; y = camera.y + Math.random() * canvas.height; }
+    else if (edge === 2) { x = camera.x + Math.random() * canvas.width; y = camera.y + canvas.height + buffer; }
+    else { x = camera.x - buffer; y = camera.y + Math.random() * canvas.height; }
+    
+    x = Math.max(0, Math.min(world.width, x));
+    y = Math.max(0, Math.min(world.height, y));
+    
+    let type = 'normal';
+    let hp = 40 + (level * 10);
+    let color = '#9b59b6';
+    let speed = 2 + (level * 0.2);
+    let radius = 18;
+    let dmg = 10;
+
+    const isBossWave = level % 5 === 0;
+    
+    if (isBossWave && zombiesToSpawn === 1) {
+        type = 'boss';
+        hp = 500 + (level * 100);
+        color = '#2c3e50';
+        speed = 1.5 + (level * 0.1);
+        radius = 45;
+        dmg = 30;
+    } else {
+        const rand = Math.random();
+        if (level >= 4 && rand < 0.2) {
+            type = 'tank';
+            hp *= 2.5;
+            color = '#c0392b';
+            speed *= 0.7;
+            radius = 25;
+            dmg = 20;
+        } else if (level >= 2 && rand > 0.7) {
+            type = 'runner';
+            hp *= 0.6;
+            color = '#27ae60';
+            speed *= 1.5;
+            radius = 15;
+            dmg = 8;
+        }
+    }
+
+    const id = Date.now() + Math.random(); 
+    zombies.push({ id, x, y, hp, maxHp: hp, speed, radius, color, type, dmg });
+    zombiesToSpawn--;
+}
+
+function shoot() {
+    if (player.ammo <= 0) { 
+        AudioSys.playTone(150, 'square', 0.05, 0.05);
+        return; 
+    }
+    
+    const now = Date.now();
+    let fireRate = 200; 
+    if(player.weaponLevel >= 4) fireRate = 100;
+
+    if (now - (player.lastShot || 0) < fireRate) return;
+    
+    player.lastShot = now;
+    player.ammo--;
+    AudioSys.playShoot();
+    
+    screenShake = 3 + (player.weaponLevel);
+
+    let baseDmg = 20;
+    let multiplier = 1 + (player.weaponLevel * 0.6); 
+    let dmg = baseDmg * multiplier;
+    
+    let bulletSize = 4 + (player.weaponLevel);
+    let bulletSpeed = 15 + (player.weaponLevel * 2);
+
+    let life = 1.5;
+    
+    bullets.push({
+        x: player.x + Math.cos(player.angle)*30,
+        y: player.y + Math.sin(player.angle)*30,
+        angle: player.angle + (Math.random()-0.5)*0.05,
+        speed: bulletSpeed,
+        damage: dmg,
+        life: life,
+        radius: bulletSize,
+        level: player.weaponLevel
+    });
+
+    updateWeaponUI();
+}
+
+function damageZombie(z, idx, dmg) {
+    z.hp -= dmg;
+    
+    const isCrit = Math.random() > 0.8;
+    const finalDmg = isCrit ? dmg * 1.5 : dmg;
+    
+    damageNumbers.push({
+        x: z.x, y: z.y - 20, 
+        val: finalDmg, 
+        crit: isCrit, 
+        life: 1.0, 
+        vy: -2
+    });
+
+    if (z.hp <= 0) {
+        const scoreGain = z.type === 'boss' ? 500 : (z.type === 'tank' ? 100 : 50);
+        player.score += scoreGain;
+        player.kills++;
+
+        dyingZombies.push({
+            id: z.id,
+            x: z.x,
+            y: z.y,
+            radius: z.radius,
+            color: z.color,
+            type: z.type,
+            animationTime: 0.5
+        });
+        
+        AudioSys.playZombieDeath();
+        
+        zombies.splice(idx, 1);
+        
+        if (Math.random() < 0.2 || z.type === 'boss') {
+            pickups.push({
+                x: z.x, y: z.y,
+                type: Math.random() > 0.5 ? 'ammo' : 'shield',
+                value: z.type === 'boss' ? 100 : 30
+            });
+        }
+    }
+}
+
+function damagePlayer(amount) {
+    const now = Date.now();
+    if (now - player.iframe < 500) return;
+    
+    let remainingDmg = amount;
+    if (player.shield > 0) {
+        if (player.shield >= amount) {
+            player.shield -= amount;
+            remainingDmg = 0;
+            AudioSys.playHit();
+        } else {
+            remainingDmg -= player.shield;
+            player.shield = 0;
+            AudioSys.playTone(100, 'sawtooth', 0.2, 0.1);
+        }
+    }
+
+    if (remainingDmg > 0) {
+        player.hp -= remainingDmg;
+        AudioSys.playHit();
+        
+        const overlay = document.getElementById('damage-overlay');
+        overlay.classList.add('hurt-effect');
+        setTimeout(() => overlay.classList.remove('hurt-effect'), 200);
+    }
+
+    player.iframe = now;
+    screenShake = 8;
+
+    if (player.hp <= 0) {
+        player.hp = 0;
+        gameOver();
+    }
+}
+
+function gameOver() {
+    gameState = 'GAMEOVER';
+    document.body.classList.remove('game-active');
+    document.getElementById('rank-val').textContent = Math.floor(Math.random() * 10) + 2;
+    document.getElementById('final-score').textContent = player.score;
+    gameOverScreen.classList.remove('hidden');
+    upgradeMenu.classList.add('hidden'); 
+    mobileControls.classList.add('hidden');
+}
+
+function reload() {
+    if (player.score >= 10) { 
+       damageNumbers.push({x: player.x, y: player.y-40, val: "Need Ammo!", crit: false, life: 1.0, vy: -1});
+    }
+}
+
+function createStations() {
+    stations = [];
+    for(let i=0; i<3; i++) {
+        stations.push({
+            x: Math.random() * (world.width - 200) + 100,
+            y: Math.random() * (world.height - 200) + 100
+        });
+    }
+}
+
+function getNearestStation() {
+    let nearest = null;
+    let minDst = 99999;
+    stations.forEach(s => {
+        const d = Math.hypot(player.x - s.x, player.y - s.y);
+        if (d < minDst) {
+            minDst = d;
+            nearest = { ...s, dist: d };
+        }
+    });
+    return nearest;
+}
+
+function interact() {
+    const st = getNearestStation();
+    if (st && st.dist < 80) {
+        updateShopUI();
+        upgradeMenu.classList.toggle('hidden');
+    }
+}
+
+function updateShopUI() {
+    const price = WEAPON_PRICES[Math.min(player.weaponLevel, WEAPON_PRICES.length - 1)];
+    const btn = document.getElementById('btn-upgrade-weapon');
+    const title = document.getElementById('weapon-upgrade-title');
+    const stats = document.getElementById('weapon-upgrade-stats');
+
+    if (player.weaponLevel >= 4) {
+        btn.textContent = "الحد الأقصى";
+        btn.disabled = true;
+        title.textContent = "سلاح أسطوري";
+        stats.textContent = "أعلى مستوى";
+    } else {
+        btn.textContent = `${price} نقطة`;
+        btn.disabled = false;
+        title.textContent = `ترقية لـ ${WEAPON_NAMES[player.weaponLevel + 1]}`;
+        stats.textContent = `ضرر أعلى + شكل جديد`;
+    }
+
+    const btnHp = document.getElementById('btn-buy-hp');
+    if (player.hp >= player.maxHp) {
+        btnHp.disabled = true;
+        btnHp.textContent = "الصحة كاملة";
+    } else {
+        btnHp.disabled = false;
+        btnHp.textContent = "75 نقطة";
+    }
+}
+
+function tryBuy(type) {
+    if (type === 'weapon') {
+        const price = WEAPON_PRICES[Math.min(player.weaponLevel, WEAPON_PRICES.length - 1)];
+        if (player.weaponLevel < 4 && player.score >= price) {
+            player.score -= price;
+            player.weaponLevel++;
+            AudioSys.playWin();
+            updateWeaponUI();
+            updateShopUI();
+        }
+    } else if (type === 'shield') {
+        if (player.score >= 50 && player.shield < player.maxShield) {
+            player.score -= 50;
+            player.shield = Math.min(player.shield + 50, player.maxShield);
+            AudioSys.playShield();
+        }
+    } else if (type === 'hp') {
+        if (player.score >= 75 && player.hp < player.maxHp) {
+            player.score -= 75;
+            player.hp = Math.min(player.hp + 50, player.maxHp);
+            AudioSys.playShield();
+        }
+    } else if (type === 'ammo') {
+        if (player.score >= 20) {
+            player.score -= 20;
+            player.ammo = player.maxAmmo;
+        }
+    }
+    updateWeaponUI();
+    updateShopUI();
+}
+
+function updateWeaponUI() {
+    const ui = document.getElementById('weapon-ui');
+    const rarity = Math.min(player.weaponLevel, 4);
+    
+    ui.className = 'weapon-slot';
+    if(rarity === 0) ui.classList.add('rarity-common');
+    if(rarity === 1) ui.classList.add('rarity-rare');
+    if(rarity === 2) ui.classList.add('rarity-epic');
+    if(rarity >= 3) ui.classList.add('rarity-legendary');
+    
+    const bg = ui.querySelector('.rarity-bg');
+    bg.style.background = `radial-gradient(circle, ${RARITY_COLORS[rarity]}44, transparent)`;
+    
+    document.getElementById('ammo-val').textContent = player.ammo;
+}
+
+function updatePickups(dt) {
+    for (let i = pickups.length - 1; i >= 0; i--) {
+        const p = pickups[i];
+        const dist = Math.hypot(player.x - p.x, player.y - p.y);
+        if (dist < player.radius + 15) {
+            if (p.type === 'ammo') {
+                player.ammo = Math.min(player.ammo + p.value, player.maxAmmo);
+                updateWeaponUI();
+            } else {
+                player.shield = Math.min(player.shield + p.value, player.maxShield);
+                AudioSys.playShield();
+            }
+            pickups.splice(i, 1);
+        }
+    }
+}
+
+function updateParticles(dt) {
+    for(let i=particles.length-1; i>=0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt * 2;
+        if(p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function updateDamageNumbers(dt) {
+    for(let i=damageNumbers.length-1; i>=0; i--) {
+        const n = damageNumbers[i];
+        n.y += n.vy;
+        n.life -= dt;
+        if(n.life <= 0) damageNumbers.splice(i, 1);
+    }
+}
+
+function updateHUD() {
+    document.getElementById('hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
+    document.getElementById('hp-text').textContent = Math.ceil(player.hp);
+    
+    document.getElementById('shield-bar').style.width = (player.shield / player.maxShield * 100) + '%';
+    document.getElementById('shield-text').textContent = Math.ceil(player.shield);
+    
+    const staminaBar = document.getElementById('stamina-bar');
+    staminaBar.style.width = player.stamina + '%';
+    if (player.fatigued) staminaBar.classList.add('fatigued');
+    else staminaBar.classList.remove('fatigued');
+
+    document.getElementById('score-val').textContent = player.score;
+    document.getElementById('zombies-val').textContent = zombies.length + zombiesToSpawn;
+
+    const st = getNearestStation();
+    if (!st || st.dist >= 100) {
+        upgradeMenu.classList.add('hidden');
+    }
+}
+
+init();
+
+</script>
+</body>
+</html>
