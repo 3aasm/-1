@@ -271,7 +271,11 @@
                 </div>
             </div>
             <div class="mt-8">
+            <div class="mt-8 space-y-3">
                 <button onclick="closeRules()" class="noir-btn btn-secondary w-full">علم، وسينفذ</button>
+                <a href="https://instagram.com/ti.1k" target="_blank" class="flex items-center justify-center gap-2 w-full py-2 border-2 border-[#8b5a2b] text-[#8b5a2b] font-bold text-xs hover:bg-[#8b5a2b] hover:text-[#f0e6d2] transition-colors font-typewriter">
+                    <i data-lucide="instagram" class="w-4 h-4"></i> تابعني على انستجرام @ti.1k
+                </a>
             </div>
         </div>
     </div>
@@ -380,6 +384,10 @@
                             <div class="flex justify-between items-center mb-1 border-b border-[#333] pb-1">
                                 <span class="text-[10px] text-[#8b0000] font-typewriter uppercase tracking-widest font-bold">سجل المحققين</span>
                                 <span class="text-[#f0e6d2] font-bold text-xs"><i data-lucide="users" class="inline w-3 h-3"></i> ${state.players.length}</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="resetPoints()" class="text-[10px] text-[#d4c5a5] hover:text-white border border-[#333] px-2 py-0.5 rounded bg-[#222] transition-colors">تصفير النقاط</button>
+                                    <span class="text-[#f0e6d2] font-bold text-xs"><i data-lucide="users" class="inline w-3 h-3"></i> ${state.players.length}</span>
+                                </div>
                             </div>
                             <div class="text-[10px] text-gray-500 font-typewriter mt-1">تم تسجيل النقاط لكل محقق في القائمة أدناه</div>
                         </div>
@@ -816,6 +824,13 @@
         function setState(screen) {
             state.screen = screen;
             render();
+        }
+
+        function resetPoints() {
+            if (confirm("هل أنت متأكد من تصفير جميع النقاط؟")) {
+                state.scores = {};
+                render();
+            }
         }
 
         function addPlayer() {
