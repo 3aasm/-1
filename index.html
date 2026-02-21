@@ -246,26 +246,50 @@
             animation: slide-transition 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
         }
 
-        /* Start Game Animation (2 seconds) */
-        @keyframes wind-sequence-long {
-            0% { transform: translateX(100%); }
-            15% { transform: translateX(0); }
-            85% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-
-        .investigation-overlay {
+        /* Noir Transition Overlay */
+        .noir-overlay {
             position: fixed;
             inset: 0;
             z-index: 100;
+            display: flex;
+            pointer-events: none;
+        }
+        
+        .noir-panel {
+            flex: 1;
             background: #0f0f0f;
+            height: 100%;
+            transform: scaleX(0);
+            transition: transform 0.5s cubic-bezier(0.7, 0, 0.3, 1);
+            border-bottom: 4px solid #8b0000;
+        }
+        
+        .noir-panel.left { transform-origin: left; border-right: 1px solid #333; }
+        .noir-panel.right { transform-origin: right; border-left: 1px solid #333; }
+        
+        .noir-overlay.active .noir-panel { transform: scaleX(1); }
+        
+        .noir-content {
+            position: absolute;
+            inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1.5rem;
-            animation: wind-sequence-long 2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
-            border-left: 8px solid #8b0000;
+            z-index: 101;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .noir-content.visible { opacity: 1; }
+
+        .stamp-slam {
+            animation: stamp-slam-anim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes stamp-slam-anim {
+            0% { opacity: 0; transform: scale(3) rotate(-15deg); }
+            100% { opacity: 1; transform: scale(1) rotate(-5deg); }
         }
 
     </style>
@@ -1001,21 +1025,36 @@
                 category = 'عشوائي'; // Keep label as random or change? User expects random.
             }
             
-            // Create Animation Overlay
+            // Create Noir Animation Overlay
             const overlay = document.createElement('div');
-            overlay.className = 'investigation-overlay';
+            overlay.className = 'noir-overlay';
             overlay.innerHTML = `
-                <div class="relative">
-                    <div class="absolute inset-0 bg-[#8b0000] blur-xl opacity-20 rounded-full animate-pulse"></div>
-                    <i data-lucide="search" class="w-20 h-20 text-[#f0e6d2] relative z-10"></i>
+                <div class="noir-panel left"></div>
+                <div class="noir-panel right"></div>
+                <div class="noir-content">
+                    <div class="relative mb-6">
+                        <i data-lucide="folder-search" class="w-24 h-24 text-[#f0e6d2]"></i>
+                        <div class="absolute -bottom-2 -right-2 bg-[#8b0000] text-white text-xs px-2 py-1 font-bold font-typewriter transform -rotate-6 shadow-lg border border-black">CONFIDENTIAL</div>
+                    </div>
+                    <h2 class="text-3xl font-bold font-typewriter text-[#f0e6d2] tracking-widest uppercase mb-4 drop-shadow-md">${category}</h2>
+                    <div class="text-[#8b0000] font-bold border-4 border-[#8b0000] px-6 py-2 text-lg tracking-widest opacity-0" id="loadingStamp">جاري بدء التحقيق</div>
                 </div>
-                <h2 class="text-2xl font-bold font-typewriter text-[#f0e6d2] tracking-widest uppercase drop-shadow-md">جاري بدء التحقيق...</h2>
-                <div class="w-16 h-1 bg-[#8b0000] rounded-full animate-pulse"></div>
             `;
             document.body.appendChild(overlay);
             lucide.createIcons();
 
-            // Wait for animation to cover screen (approx 300ms-1700ms is covered)
+            // Trigger Animation Sequence
+            requestAnimationFrame(() => overlay.classList.add('active'));
+            setTimeout(() => overlay.querySelector('.noir-content').classList.add('visible'), 500);
+            setTimeout(() => {
+                const stamp = document.getElementById('loadingStamp');
+                if(stamp) {
+                    stamp.classList.remove('opacity-0');
+                    stamp.classList.add('stamp-slam');
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }
+            }, 1000);
+
             setTimeout(() => {
                 const secretWord = words[Math.floor(Math.random() * words.length)];
                 const imposterIndex = Math.floor(Math.random() * state.players.length);
@@ -1030,12 +1069,13 @@
                 state.questionState = { round: 1, askerIndex: firstPlayerIndex, isCustom: false, showTransition: false };
                 
                 setState('pass-phone');
-            }, 1000); // Change state halfway through
-
-            // Remove overlay after animation ends
-            setTimeout(() => {
-                overlay.remove();
-            }, 2000);
+                
+                // Exit Animation
+                overlay.querySelector('.noir-content').classList.remove('visible');
+                overlay.classList.remove('active');
+                
+                setTimeout(() => overlay.remove(), 600);
+            }, 2200);
         }
 
         function handleCustomGame() {
