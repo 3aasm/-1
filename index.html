@@ -662,12 +662,6 @@
             width: 18px;
             height: 18px;
             margin-right: 8px;
-            animation: icon-bounce 2s ease-in-out infinite;
-        }
-
-        @keyframes icon-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
         }
 
         .start-button.clicked {
@@ -739,8 +733,9 @@
             
             <div class="flex gap-2">
                 <button onclick="toggleSettings(true)" id="settingsBtn" class="p-1.5 text-[#f0e6d2] hover:bg-white/5 rounded transition"><i data-lucide="settings" class="w-5 h-5"></i></button>
+                <button onclick="resetPoints()" id="resetPointsBtn" class="hidden group relative px-3 py-1.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2" style="background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border: 1.5px solid #8b0000;"><div class="absolute inset-0 bg-gradient-to-r from-[#8b0000] to-[#5a0000] opacity-0 group-hover:opacity-30 rounded-lg transition-opacity"></div><i data-lucide="refresh-cw" class="w-4 h-4 relative z-10 text-[#d4c5a5] group-hover:text-white transition-colors"></i><span class="text-xs font-typewriter text-[#d4c5a5] group-hover:text-white transition-colors font-bold relative z-10">تصفير</span></button>
                 <button onclick="showRules()" class="p-1.5 text-[#f0e6d2] hover:bg-white/5 rounded transition"><i data-lucide="help-circle" class="w-5 h-5"></i></button>
-                <button onclick="showExitConfirm()" id="exitBtn" class="hidden group relative p-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5" style="background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border: 1.5px solid #555;"><div class="absolute inset-0 bg-gradient-to-r from-[#8b0000] to-[#5a0000] opacity-0 group-hover:opacity-20 rounded-lg transition-opacity"></div><i data-lucide="home" class="w-5 h-5 relative z-10 text-[#e0e0e0] group-hover:text-[#ff6b6b] transition-colors"></i></button>
+                <button onclick="showExitConfirm()" id="exitBtn" class="hidden group relative px-3 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2" style="background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border: 1.5px solid #555;"><div class="absolute inset-0 bg-gradient-to-r from-[#8b0000] to-[#5a0000] opacity-0 group-hover:opacity-20 rounded-lg transition-opacity"></div><i data-lucide="gavel" class="w-5 h-5 relative z-10 text-[#e0e0e0] group-hover:text-[#ff6b6b] transition-colors"></i><span class="text-sm font-typewriter text-[#e0e0e0] group-hover:text-[#ff6b6b] transition-colors font-bold relative z-10">خروج</span></button>
             </div>
         </header>
 
@@ -866,6 +861,7 @@
             const app = document.getElementById('app');
             const exitBtn = document.getElementById('exitBtn');
             const settingsBtn = document.getElementById('settingsBtn');
+            const resetPointsBtn = document.getElementById('resetPointsBtn');
             
             app.innerHTML = '';
             
@@ -873,9 +869,11 @@
             if (state.screen === 'setup' || state.screen === 'category' || state.screen === 'custom') {
                 exitBtn.classList.add('hidden');
                 settingsBtn.classList.remove('hidden');
+                resetPointsBtn.classList.remove('hidden');
             } else {
                 exitBtn.classList.remove('hidden');
                 settingsBtn.classList.add('hidden');
+                resetPointsBtn.classList.add('hidden');
             }
 
             // Render based on screen
@@ -919,10 +917,6 @@
                             <div class="flex justify-between items-center mb-1 border-b border-[#333] pb-1">
                                 <span class="text-[10px] text-[#8b0000] font-typewriter uppercase tracking-widest font-bold">سجل المحققين</span>
                                 <span class="text-[#f0e6d2] font-bold text-xs"><i data-lucide="users" class="inline w-3 h-3"></i> ${state.players.length}</span>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="resetPoints()" class="text-[10px] text-[#d4c5a5] hover:text-white border border-[#333] px-2 py-0.5 rounded bg-[#222] transition-colors">تصفير النقاط</button>
-                                    <span class="text-[#f0e6d2] font-bold text-xs"><i data-lucide="users" class="inline w-3 h-3"></i> ${state.players.length}</span>
-                                </div>
                             </div>
                             <div class="text-[10px] text-gray-500 font-typewriter mt-1">تم تسجيل النقاط لكل محقق في القائمة أدناه</div>
                         </div>
@@ -1037,78 +1031,116 @@
         function renderPassPhone(container) {
             const player = state.players[state.currentPlayerIndex];
             
-            // This screen has two states managed internally or by re-rendering: 
-            // 1. "Tap to reveal" (The button)
-            // 2. "Role revealed" (The card)
-            // We'll handle this by a local check before calling render, or simpler: render handles both via a sub-state logic if needed.
-            // But since we are using Vanilla JS, we can just manipulate the DOM for the reveal interaction to avoid full re-render flickering.
-            
             container.innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center text-center gap-8 animate-slide-up relative">
+                <div class="h-full flex flex-col items-center justify-center text-center gap-6 relative">
                     
                     <!-- IDLE STATE -->
-                    <div id="passStateIdle" class="flex flex-col items-center gap-8 w-full">
-                        <div class="relative group cursor-default">
-                            <div class="absolute inset-0 bg-[#f0e6d2] blur-2xl opacity-5 rounded-full"></div>
-                            <div class="relative border-2 border-[#f0e6d2] p-8 rounded-full bg-[#0a0a0a]">
-                                <i data-lucide="users" class="text-[#f0e6d2] w-12 h-12"></i>
+                    <div id="passStateIdle" class="flex flex-col items-center gap-8 w-full h-full justify-center px-4">
+                        <div class="relative group cursor-default mb-4">
+                            <div class="absolute inset-0 bg-[#f0e6d2] blur-2xl opacity-15 rounded-full scale-150 animate-pulse"></div>
+                            <div class="relative border-3 border-[#d4c5a5] p-6 rounded-full bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] shadow-2xl">
+                                <i data-lucide="user" class="text-[#d4c5a5] w-11 h-11"></i>
                             </div>
-                            <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#0a0a0a] text-[#f0e6d2] px-2 text-xs border border-[#333]">CONFIDENTIAL</div>
                         </div>
 
-                        <div class="space-y-3 w-full">
-                            <p class="text-gray-500 text-xs font-typewriter tracking-[0.2em] uppercase">المشتبه به الحالي</p>
-                            <div class="bg-[#f0e6d2] text-black w-full py-4 font-bold font-typewriter text-3xl transform -rotate-1 shadow-[0_5px_15px_rgba(0,0,0,0.5)] relative overflow-hidden" style="background-image: url('https://www.transparenttextures.com/patterns/paper.png');">
+                        <div class="space-y-4 w-full">
+                            <p class="text-gray-400 text-xs font-typewriter tracking-[0.15em] uppercase">المشتبه به</p>
+                            <div class="bg-yellow-50 text-[#1a1a1a] w-full py-4 px-4 font-bold font-typewriter text-2xl rounded-lg shadow-xl border-3 border-[#d4c5a5]" style="background-image: url('https://www.transparenttextures.com/patterns/paper.png');">
                                 <span class="relative z-10">${player}</span>
-                                <div class="absolute top-0 left-0 w-full h-1 bg-black/10"></div>
                             </div>
                         </div>
 
-                        <div class="border border-[#8b0000] text-[#8b0000] px-4 py-2 text-xs font-typewriter uppercase tracking-widest bg-[#1a0000]">
-                            <i data-lucide="alert-triangle" class="inline w-3 h-3 mr-1"></i> سري للغاية - للعيون فقط
+                        <div class="flex items-center justify-center gap-2 text-[#d4c5a5] px-3 py-2 text-xs font-typewriter uppercase tracking-widest bg-[#8b0000]/20 border border-[#d4c5a5] rounded-lg">
+                            <i data-lucide="shield-alert" class="w-4 h-4"></i> ممنوع فضح الدور
                         </div>
 
-                        <!-- Scan Button -->
-                        <div id="scanBtn" class="mt-6 relative w-72 h-32 bg-[#151515] border-2 border-[#333] hover:border-[#f0e6d2] group active:scale-95 transition-all flex flex-col items-center justify-center gap-3 cursor-pointer select-none overflow-hidden rounded-lg">
-                            <div id="scanLine" class="absolute top-0 left-0 h-full bg-[#f0e6d2] mix-blend-overlay transition-all duration-75 ease-linear opacity-20" style="width: 0%"></div>
-                            <i data-lucide="fingerprint" class="w-12 h-12 text-gray-700 transition-all duration-300 relative z-10" id="fingerIcon"></i>
-                            <div class="text-[#f0e6d2] font-bold tracking-widest uppercase text-xs animate-pulse relative z-10" id="scanText">اضغط مطولاً للكشف</div>
+                        <!-- Scan Button with Better Design -->
+                        <div id="scanBtn" class="mt-8 relative w-80 h-40 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] border-3 border-[#d4c5a5] hover:border-[#f0e6d2] group active:scale-95 transition-all flex flex-col items-center justify-center gap-4 cursor-pointer select-none overflow-hidden rounded-xl shadow-2xl">
+                            <div id="scanLine" class="absolute top-0 left-0 h-full bg-gradient-to-r from-transparent via-[#d4c5a5] to-transparent mix-blend-screen transition-all duration-75 ease-linear opacity-30" style="width: 0%"></div>
+                            <div class="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity bg-[#d4c5a5] rounded-xl"></div>
+                            <i data-lucide="fingerprint" class="w-16 h-16 text-[#d4c5a5] transition-all duration-300 relative z-10 drop-shadow-lg" id="fingerIcon"></i>
+                            <div class="relative z-10 text-center">
+                                <div class="text-[#d4c5a5] font-bold tracking-widest uppercase text-sm" id="scanText">اضغط مطولاً للكشف</div>
+                                <div class="text-gray-500 text-xs mt-1 font-typewriter">للمسح البيومتري</div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- REVEALED STATE (Hidden initially) -->
-                    <div id="passStateRevealed" class="hidden w-full flex-col items-center gap-6 w-full animate-slide-up">
-                        <div class="case-file w-full transform rotate-1 case-folder relative">
-                            <div class="paper-clip"></div>
-                            <div class="absolute top-10 right-4 transform rotate-[-20deg] border-4 border-[#8b0000] text-[#8b0000] px-4 py-1 font-bold font-typewriter text-xl opacity-80 pointer-events-none z-0">
-                                ${state.currentPlayerIndex === state.imposterIndex ? 'متهم' : 'شاهد'}
-                            </div>
+                    <div id="passStateRevealed" class="hidden flex-col items-center gap-4 w-full h-full justify-center px-3">
+                        ${state.currentPlayerIndex === state.imposterIndex ? `
+                            <!-- Imposter Card -->
+                            <div class="w-full space-y-4">
+                                <div class="relative">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-[#8b0000] to-[#5a0000] blur-xl opacity-30 rounded-2xl"></div>
+                                    <div class="relative bg-gradient-to-br from-[#2a0000] to-[#0a0000] border-3 border-[#8b0000] rounded-2xl p-8 shadow-2xl text-center">
+                                        <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#8b0000] text-[#f0e6d2] px-6 py-2 rounded-full font-bold font-typewriter text-xs border-2 border-[#f0e6d2] tracking-widest">⚠️ تحذير</div>
+                                        
+                                        <div class="pt-4 space-y-6">
+                                            <div class="w-20 h-20 bg-[#f0e6d2] rounded-full flex items-center justify-center border-4 border-[#8b0000] mx-auto shadow-lg">
+                                                <i data-lucide="eye-off" class="text-[#8b0000] w-11 h-11"></i>
+                                            </div>
+                                            
+                                            <div class="space-y-3">
+                                                <h2 class="text-4xl font-black text-[#f0e6d2] font-typewriter uppercase tracking-wider animate-pulse">أنت المخادع!</h2>
+                                                <p class="text-[#d4c5a5] text-sm font-bold">الكلمة السرية مجهولة لديك</p>
+                                            </div>
 
-                            <div class="flex flex-col items-center gap-6 py-6 relative z-10">
-                                ${state.currentPlayerIndex === state.imposterIndex ? `
-                                    <div class="w-24 h-24 bg-[#1a1a1a] rounded-full flex items-center justify-center border-4 border-[#8b0000]">
-                                        <i data-lucide="eye-off" class="text-[#8b0000] w-12 h-12"></i>
+                                            <div class="bg-[#8b0000]/30 border-2 border-[#8b0000] rounded-lg p-4 text-xs text-[#f0e6d2] font-typewriter space-y-2">
+                                                <p class="font-bold uppercase">استراتيجيتك:</p>
+                                                <div class="space-y-1 text-left text-[10px]">
+                                                    <p>▸ استمع بعناية للأسئلة</p>
+                                                    <p>▸ حاول تخمين الكلمة</p>
+                                                    <p>▸ اخفِ عدم معرفتك</p>
+                                                    <p>▸ ألقِ الاتهام على الآخرين</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="text-center">
-                                        <h2 class="text-3xl font-black text-[#8b0000] font-typewriter uppercase mb-2 tracking-tighter">أنت المخادع</h2>
-                                        <p class="text-sm font-bold text-gray-600 bg-white/50 px-2 inline-block">حاول التمويه والإنكار</p>
-                                    </div>
-                                ` : `
-                                    <div class="w-24 h-24 bg-[#1a1a1a] rounded-full flex items-center justify-center border-4 border-[#d4c5a5]">
-                                        <i data-lucide="target" class="text-[#f0e6d2] w-12 h-12"></i>
-                                    </div>
-                                    <div class="text-center w-full">
-                                        <p class="text-[10px] text-gray-500 font-typewriter uppercase mb-2 tracking-widest">الدليل القاطع:</p>
-                                        <h2 class="text-4xl font-black border-y-2 border-dashed border-black py-2 font-typewriter bg-white/20">
-                                            ${state.secretWord}
-                                        </h2>
-                                    </div>
-                                `}
+                                </div>
                             </div>
-                        </div>
+                        ` : `
+                            <!-- Witness Card -->
+                            <div class="w-full space-y-4">
+                                <div class="relative">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-[#d4c5a5] to-[#a89968] blur-xl opacity-30 rounded-2xl"></div>
+                                    <div class="relative bg-[#f0e6d2] border-3 border-[#1a1a1a] rounded-2xl p-6 shadow-2xl text-center">
+                                        <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#1a1a1a] text-[#f0e6d2] px-6 py-2 rounded-full font-bold font-typewriter text-xs border-2 border-[#d4c5a5] tracking-widest">✓ محقق</div>
+                                        
+                                        <div class="pt-4 space-y-4">
+                                            <div class="w-20 h-20 bg-[#1a1a1a] rounded-full flex items-center justify-center border-4 border-[#d4c5a5] mx-auto shadow-lg">
+                                                <i data-lucide="target" class="text-[#d4c5a5] w-11 h-11"></i>
+                                            </div>
+                                            
+                                            <div class="space-y-2">
+                                                <h2 class="text-3xl font-black text-[#1a1a1a] font-typewriter uppercase">أنت الشاهد</h2>
+                                                <p class="text-[#8b0000] text-sm font-bold">تعرف الكلمة السرية 🎯</p>
+                                            </div>
+
+                                            <div class="bg-gradient-to-br from-[#f0e6d2] to-[#e6dcc5] border-2 border-[#1a1a1a] rounded-lg p-4">
+                                                <p class="text-[10px] text-gray-600 font-typewriter uppercase tracking-wider mb-2 font-bold">الكلمة السرية:</p>
+                                                <div class="text-4xl font-black text-[#8b0000] font-typewriter tracking-wider border-y-2 border-[#1a1a1a] py-3 bg-white/50 rounded">
+                                                    ${state.secretWord}
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-[#1a1a1a]/10 border-2 border-[#1a1a1a] rounded-lg p-3 text-xs text-[#1a1a1a] font-typewriter space-y-1 text-left">
+                                                <p class="font-bold uppercase mb-1">مهمتك:</p>
+                                                <div class="space-y-0.5">
+                                                    <p>▸ اطرح أسئلة ذكية</p>
+                                                    <p>▸ ركّز على الأجوبة المريبة</p>
+                                                    <p>▸ اكتشف المخادع 🔍</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `}
                         
-                        <button onclick="handleNextPlayer()" class="noir-btn btn-secondary w-full py-4 text-lg shadow-lg mt-4">
-                            ${state.currentPlayerIndex < state.players.length - 1 ? 'التالي >>' : 'بدء التحقيق >>'}
+                        <button onclick="handleNextPlayerWithAnimation()" class="noir-btn btn-primary w-full py-3 text-sm font-bold hover:scale-105 active:scale-95 transition-transform shadow-lg">
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                            ${state.currentPlayerIndex < state.players.length - 1 ? 'التالي' : 'ابدأ التحقيق'}
                         </button>
                     </div>
 
@@ -1124,14 +1156,14 @@
             let progress = 0;
 
             const startScan = (e) => {
-                e.preventDefault(); // Prevent text selection
+                e.preventDefault();
                 clearInterval(interval);
                 interval = setInterval(() => {
                     progress += 4;
                     scanLine.style.width = `${progress}%`;
                     fingerIcon.classList.add('text-[#f0e6d2]', 'scale-110');
-                    fingerIcon.classList.remove('text-gray-700');
-                    scanText.innerText = "جاري المسح...";
+                    fingerIcon.classList.remove('text-[#d4c5a5]');
+                    scanText.innerText = "جاري الفحص البيومتري...";
                     
                     if (progress >= 100) {
                         clearInterval(interval);
@@ -1148,7 +1180,7 @@
                 progress = 0;
                 scanLine.style.width = '0%';
                 fingerIcon.classList.remove('text-[#f0e6d2]', 'scale-110');
-                fingerIcon.classList.add('text-gray-700');
+                fingerIcon.classList.add('text-[#d4c5a5]');
                 scanText.innerText = "اضغط مطولاً للكشف";
             };
 
@@ -1160,22 +1192,42 @@
         }
 
         function renderPlaying(container) {
-            // Question Logic
+            // Question Logic - Compact Mobile Design
             let questionHtml = '';
             if (state.questionState.showTransition) {
                 questionHtml = `
-                    <div class="relative bg-[#1a1a1a] border-2 border-[#333] p-6 rounded-lg shadow-xl flex flex-col items-center justify-center gap-4 min-h-[160px]">
-                        <h3 class="text-2xl font-bold text-[#f0e6d2] font-typewriter animate-slide-up">السؤال التالي...</h3>
+                    <div class="flex items-center justify-center flex-col gap-2">
+                        <i data-lucide="hourglass" class="w-12 h-12 text-[#d4c5a5] animate-spin"></i>
+                        <h3 class="text-xl font-bold text-[#d4c5a5] font-typewriter">جهّز نفسك</h3>
                     </div>
                 `;
             } else if (state.questionState.isCustom) {
                 questionHtml = `
-                    <div class="relative overflow-hidden bg-[#1a1a1a] border-2 border-[#8b0000] border-dashed p-6 rounded-lg text-center shadow-[0_0_15px_rgba(139,0,0,0.2)]">
-                        <div class="absolute inset-0 bg-[#8b0000] opacity-5 animate-pulse"></div>
-                        <div class="relative z-10 flex flex-col items-center gap-2">
-                            <i data-lucide="message-circle" class="w-8 h-8 text-[#8b0000]"></i>
-                            <h3 class="text-[#f0e6d2] font-bold text-xl tracking-widest">نـقـاش حــر</h3>
-                            <p class="text-gray-400 text-xs font-typewriter">الآن يمكن للجميع استجواب الجميع. راقبوا ردود الأفعال!</p>
+                    <div class="w-full">
+                        <div class="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-white/5 rounded-xl p-6 shadow-lg text-center space-y-4">
+                            <div class="flex justify-center mb-2">
+                                <i data-lucide="users" class="w-10 h-10 text-[#8b0000]"></i>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-xl font-bold text-[#d4c5a5] font-typewriter mb-1">نقاش حر</h3>
+                                <p class="text-xs text-[#8b0000] font-semibold">الجميع يتحدثون</p>
+                            </div>
+                            
+                            <div class="border-t border-b border-white/5 py-3 my-2">
+                                <p class="text-sm text-[#f0e6d2]">استجواب حر - ناقش مع الآخرين واكتشف الحقيقة!</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <div class="bg-[#8b0000] bg-opacity-20 border border-white/5 rounded-lg p-3">
+                                    <div class="text-lg font-bold text-[#d4c5a5]">${state.settings.timerDuration}ث</div>
+                                    <p class="text-xs text-[#f0e6d2]">الوقت</p>
+                                </div>
+                                <div class="bg-[#8b0000] bg-opacity-20 border border-white/5 rounded-lg p-3">
+                                    <div class="text-lg font-bold text-[#d4c5a5]">${state.players.length}</div>
+                                    <p class="text-xs text-[#f0e6d2]">مشاركين</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1184,88 +1236,78 @@
                 const targetIndex = (state.questionState.askerIndex + 1) % state.players.length;
                 const target = state.players[targetIndex];
                 questionHtml = `
-                    <div class="relative group">
-                        <div class="absolute inset-0 bg-[#f0e6d2] opacity-5 blur-md rounded-lg"></div>
-                        <div class="relative bg-[#1a1a1a] border-2 border-[#333] p-6 rounded-lg shadow-xl flex flex-col items-center gap-4">
-                            
-                            <div class="flex items-center justify-between w-full text-[#f0e6d2]">
-                                <div class="flex flex-col items-center w-1/3">
-                                    <span class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">السائل</span>
-                                    <span class="font-bold text-lg text-[#8b0000] truncate max-w-full">${asker}</span>
+                    <div class="w-full space-y-3">
+                        <!-- Asker Card -->
+                        <div class="relative w-full">
+                            <div class="relative bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border-2 border-[#d4c5a5] rounded-xl p-4 shadow-lg">
+                                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#8b0000] text-[#f0e6d2] px-3 py-0.5 rounded-full text-[10px] font-bold font-typewriter border border-[#d4c5a5]">السائل</div>
+                                <div class="flex items-center justify-center gap-3 pt-1">
+                                    <div class="w-10 h-10 bg-[#8b0000] rounded-full flex items-center justify-center shadow-lg border border-[#d4c5a5]">
+                                        <i data-lucide="help-circle" class="w-5 h-5 text-[#f0e6d2]"></i>
+                                    </div>
+                                    <h4 class="text-base font-bold text-[#d4c5a5] font-typewriter break-words flex-1">${asker}</h4>
                                 </div>
-                                
-                                <div class="flex flex-col items-center justify-center w-1/3">
-                                    <i data-lucide="arrow-left" class="w-6 h-6 text-[#f0e6d2] animate-pulse"></i>
-                                    <span class="text-[10px] text-gray-600 mt-1">يسأل</span>
-                                </div>
-
-                                <div class="flex flex-col items-center w-1/3">
-                                    <span class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">المجيب</span>
-                                    <span class="font-bold text-lg text-[#f0e6d2] truncate max-w-full">${target}</span>
-                                </div>
-                            </div>
-
-                            <div class="w-full h-px bg-[#333]"></div>
-
-                            <div class="flex items-center justify-between w-full">
-                                <span class="text-xs text-gray-500 font-typewriter">الجولة ${state.questionState.round} / ${state.settings.roundsPerPlayer}</span>
-                                <button onclick="nextQuestion()" class="noir-btn btn-secondary py-2 px-4 text-xs hover:bg-[#f0e6d2] hover:text-black transition-colors">
-                                    السؤال التالي <i data-lucide="chevron-left" class="w-3 h-3"></i>
-                                </button>
                             </div>
                         </div>
+
+                        <!-- Arrow Connection -->
+                        <div class="flex justify-center">
+                            <i data-lucide="arrow-down" class="w-5 h-5 text-[#d4c5a5] animate-bounce"></i>
+                        </div>
+
+                        <!-- Target Card -->
+                        <div class="relative w-full">
+                            <div class="relative bg-[#f0e6d2] border-2 border-[#1a1a1a] rounded-xl p-4 shadow-lg">
+                                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#1a1a1a] text-[#f0e6d2] px-3 py-0.5 rounded-full text-[10px] font-bold font-typewriter border border-[#d4c5a5]">المجيب</div>
+                                <div class="flex items-center justify-center gap-3 pt-1">
+                                    <div class="w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center shadow-lg border border-[#d4c5a5]">
+                                        <i data-lucide="message-square" class="w-5 h-5 text-[#d4c5a5]"></i>
+                                    </div>
+                                    <h4 class="text-base font-bold text-[#1a1a1a] font-typewriter break-words flex-1">${target}</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Round Info -->
+                        <div class="flex justify-center gap-3 items-center py-2 border-t border-[#333]">
+                            <div class="text-center">
+                                <div class="text-[9px] text-gray-500 uppercase font-typewriter">الجولة</div>
+                                <div class="text-lg font-bold text-[#d4c5a5] font-typewriter">${state.questionState.round}/${state.settings.roundsPerPlayer}</div>
+                            </div>
+                        </div>
+
+                        <!-- Next Question Button -->
+                        <button onclick="nextQuestion()" class="relative w-full py-3 px-4 text-sm font-bold text-[#1a1a1a] bg-gradient-to-br from-[#d4c5a5] to-[#c4b295] border-2 border-[#8b0000] rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden group">
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                            <div class="relative z-10 flex items-center justify-center gap-2">
+                                <span>السؤال التالي</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-1"></i>
+                            </div>
+                        </button>
                     </div>
                 `;
             }
 
             container.innerHTML = `
-                <div class="h-full flex flex-col justify-between py-6 animate-slide-up">
-                    
-                    <!-- Walking Animation Background -->
-                    <div class="absolute top-20 left-0 w-full h-32 pointer-events-none overflow-hidden opacity-30 z-0">
-                        <div class="walking-figure absolute top-0 left-0 w-24 h-full flex items-center justify-center text-black">
-                            <i data-lucide="footprints" class="w-20 h-20 transform rotate-90"></i>
-                        </div>
-                    </div>
-
-                    <div class="text-center space-y-8">
-                        <!-- Timer -->
-                        <div class="inline-block relative group">
-                            <div class="absolute inset-0 border border-[#f0e6d2] transform translate-x-1 translate-y-1"></div>
-                            <div class="bg-[#1a1a1a] border border-[#f0e6d2] px-10 py-5 relative z-10">
-                                <div class="text-[10px] text-gray-500 font-typewriter mb-1 uppercase tracking-widest">الزمن المنقضي</div>
-                                <div class="text-5xl font-typewriter font-bold text-[#f0e6d2] tabular-nums tracking-widest animate-pulse" id="gameTimer">
-                                    ${formatTime(state.timer)}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- First Player -->
-                        <div class="flex justify-center">
-                            <div class="bg-[#f0e6d2] text-black p-4 w-full max-w-xs relative shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform -rotate-2 border border-gray-400" style="background-image: url('https://www.transparenttextures.com/patterns/paper.png');">
-                                <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-900 shadow-sm border border-black/20 z-20"></div>
-                                <div class="text-center mt-2">
-                                    <div class="flex items-center justify-center gap-2 mb-2 text-[#8b0000]">
-                                        <i data-lucide="crown" class="w-4 h-4 fill-current"></i>
-                                        <span class="text-[10px] font-bold uppercase tracking-widest">رئيس التحقيق</span>
-                                    </div>
-                                    <div class="text-2xl font-bold font-typewriter uppercase">${state.players[state.firstPlayerIndex]}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Question Section -->
-                    <div class="my-4">
+                <div class="h-full flex flex-col justify-between py-4">
+                    <div class="flex-1 flex flex-col justify-center px-2">
                         ${questionHtml}
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="text-center text-xs text-gray-500 font-typewriter">
-                            موقع الجريمة: <span class="text-[#f0e6d2] border-b border-[#f0e6d2] pb-0.5 font-bold">${state.selectedCategory}</span>
+                    <!-- Bottom Section -->
+                    <div class="space-y-2 border-t border-[#333] pt-3 px-2">
+                        <div class="grid grid-cols-2 gap-3 text-center text-[10px]">
+                            <div class="bg-[#1a1a1a] border border-[#333] rounded p-2">
+                                <div class="text-gray-500 uppercase font-typewriter mb-0.5">الزمن</div>
+                                <div class="text-lg font-bold text-[#d4c5a5] font-typewriter tabular-nums" id="gameTimer">${formatTime(state.timer)}</div>
+                            </div>
+                            <div class="bg-[#1a1a1a] border border-[#333] rounded p-2">
+                                <div class="text-gray-500 uppercase font-typewriter mb-0.5">موقع</div>
+                                <div class="text-xs font-bold text-[#d4c5a5] font-typewriter truncate">${state.selectedCategory}</div>
+                            </div>
                         </div>
-                        <button onclick="setState('voting')" class="noir-btn btn-danger w-full text-lg py-4">
-                            <i data-lucide="gavel" class="w-5 h-5"></i> إصدار الحكم (تصويت)
+                        <button onclick="setState('voting')" class="noir-btn btn-danger w-full text-sm py-2">
+                            <i data-lucide="gavel" class="w-4 h-4"></i> تصويت
                         </button>
                     </div>
                 </div>
@@ -1532,6 +1574,18 @@
             startGame(categoryName);
         }
 
+        function handleNextPlayerWithAnimation() {
+            // Create transition animation overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'transition-overlay';
+            document.body.appendChild(overlay);
+
+            setTimeout(() => {
+                handleNextPlayer();
+                setTimeout(() => overlay.remove(), 300);
+            }, 300);
+        }
+
         function handleNextPlayer() {
             if (state.currentPlayerIndex + 1 < state.players.length) {
                 state.currentPlayerIndex++;
@@ -1752,6 +1806,7 @@
                     setTimeout(() => {
                         mainContent.classList.remove('opacity-0');
                     }, 1000);
+                    mainContent.classList.remove('opacity-0');
                 }
                 
                 // Remove overlay from DOM
